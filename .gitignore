@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+vite.out.log
+vite.err.log
+papaleguas-preview.png
+papaleguas-auth-preview.png
+.vercel/
+.supabase/
