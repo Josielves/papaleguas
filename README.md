@@ -15,10 +15,14 @@ npm run dev
 npm run build
 ```
 
-## Login demo
+## Autenticacao
 
-- Cliente: `cliente@papaleguas.com` / `cliente123`
-- Motorista: `motorista@papaleguas.com` / `motorista123`
+O app usa Supabase Auth para cadastro/login com email e senha.
+
+No cadastro, o usuario escolhe o tipo de conta:
+
+- Cliente
+- Motorista
 
 ## Publicar na Vercel
 
@@ -41,4 +45,4 @@ VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 ```
 
-> A versao atual usa autenticacao mockada no frontend. O schema acima prepara a base para conectar Supabase Auth e as tabelas reais na proxima etapa.
+Depois de executar o schema, todo novo usuario criado pelo Supabase Auth gera automaticamente um registro na tabela `profiles`.

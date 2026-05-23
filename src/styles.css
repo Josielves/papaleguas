@@ -321,6 +321,12 @@ h2 {
   color: #001015;
 }
 
+.primary-button:disabled {
+  cursor: wait;
+  filter: saturate(0.75);
+  opacity: 0.72;
+}
+
 .search-box {
   align-items: center;
   background: var(--surface-2);
@@ -876,6 +882,15 @@ h2 {
   border: 1px solid rgba(255, 77, 95, 0.32);
   border-radius: 8px;
   color: #ffb9c1;
+  font-weight: 700;
+  padding: 12px;
+}
+
+.auth-message {
+  background: rgba(69, 255, 149, 0.12);
+  border: 1px solid rgba(69, 255, 149, 0.32);
+  border-radius: 8px;
+  color: var(--accent);
   font-weight: 700;
   padding: 12px;
 }

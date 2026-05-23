@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   AlertTriangle,
@@ -33,6 +33,7 @@ import {
   WalletCards,
   X
 } from "lucide-react";
+import { isSupabaseConfigured, supabase } from "./lib/supabase";
 import "./styles.css";
 
 const routes = [
@@ -89,37 +90,32 @@ const driverRoutes = [
   { name: "Santa Rita -> Rodoviaria", occupancy: 58, revenue: "R$ 81", next: "17:40" }
 ];
 
-const demoUsers = [
-  {
-    id: 1,
-    name: "Ana Beatriz",
-    email: "cliente@papaleguas.com",
-    password: "cliente123",
-    role: "passenger",
-    avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=256&q=80",
-    badge: "Cliente fidelidade",
-    walletLabel: "Fidelidade",
-    walletValue: "1.840 pontos"
-  },
-  {
-    id: 2,
-    name: "Marina Costa",
-    email: "motorista@papaleguas.com",
-    password: "motorista123",
-    role: "driver",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=256&q=80",
-    badge: "Motorista verificada",
-    walletLabel: "Saldo",
-    walletValue: "R$ 1.482,50"
-  }
-];
+const defaultAvatar = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=256&q=80";
+
+function formatUser(profile, sessionUser) {
+  const role = profile?.role || sessionUser?.user_metadata?.role || "passenger";
+  const name = profile?.full_name || sessionUser?.user_metadata?.full_name || sessionUser?.email || "Usuario";
+
+  return {
+    id: profile?.id || sessionUser?.id,
+    authUserId: sessionUser?.id,
+    name,
+    email: sessionUser?.email,
+    role,
+    avatar: profile?.avatar_url || defaultAvatar,
+    badge: role === "driver" ? "Motorista verificado" : "Cliente Papaleguas",
+    walletLabel: role === "driver" ? "Saldo" : "Fidelidade",
+    walletValue: role === "driver" ? "R$ 0,00" : "0 pontos"
+  };
+}
 
 function App() {
   const [theme, setTheme] = useState("dark");
   const [view, setView] = useState("passenger");
-  const [users, setUsers] = useState(demoUsers);
   const [currentUser, setCurrentUser] = useState(null);
   const [authError, setAuthError] = useState("");
+  const [authMessage, setAuthMessage] = useState("");
+  const [authReady, setAuthReady] = useState(false);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(routes[0]);
   const [reserved, setReserved] = useState(false);
@@ -133,67 +129,160 @@ function App() {
     );
   }, [query]);
 
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setAuthReady(true);
+      setAuthError("Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY na Vercel.");
+      return undefined;
+    }
+
+    loadSession();
+
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        loadUserProfile(session.user);
+        return;
+      }
+
+      setCurrentUser(null);
+      setAuthReady(true);
+    });
+
+    return () => data.subscription.unsubscribe();
+  }, []);
+
   function openSession(user) {
     setCurrentUser(user);
     setView(user.role === "driver" ? "driver" : "passenger");
     setMenuOpen(false);
     setAuthError("");
+    setAuthMessage("");
   }
 
-  function handleLogin({ email, password }) {
-    const user = users.find(
-      (account) => account.email.toLowerCase() === email.trim().toLowerCase() && account.password === password
-    );
+  async function loadSession() {
+    const { data, error } = await supabase.auth.getSession();
 
-    if (!user) {
-      setAuthError("Usuario ou senha invalidos.");
+    if (error) {
+      setAuthError(error.message);
+      setAuthReady(true);
       return;
     }
 
-    openSession(user);
+    if (data.session?.user) {
+      await loadUserProfile(data.session.user);
+    } else {
+      setAuthReady(true);
+    }
   }
 
-  function handleSignup({ name, email, password, role }) {
+  async function loadUserProfile(sessionUser) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("auth_user_id", sessionUser.id)
+      .maybeSingle();
+
+    openSession(formatUser(profile, sessionUser));
+    setAuthReady(true);
+  }
+
+  async function handleLogin({ email, password }) {
+    if (!isSupabaseConfigured) {
+      setAuthError("Supabase ainda nao esta configurado.");
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password
+    });
+
+    if (error) {
+      setAuthError("Usuario ou senha invalidos.");
+      setAuthMessage("");
+      return;
+    }
+
+    await loadUserProfile(data.user);
+  }
+
+  async function handleSignup({ name, email, password, role }) {
+    if (!isSupabaseConfigured) {
+      setAuthError("Supabase ainda nao esta configurado.");
+      return;
+    }
+
     if (!name.trim() || !email.trim() || password.length < 6) {
       setAuthError("Preencha nome, usuario e uma senha com pelo menos 6 caracteres.");
       return;
     }
 
-    if (users.some((account) => account.email.toLowerCase() === email.trim().toLowerCase())) {
-      setAuthError("Este usuario ja existe.");
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: {
+          full_name: name.trim(),
+          role
+        }
+      }
+    });
+
+    if (error) {
+      setAuthError(error.message);
+      setAuthMessage("");
       return;
     }
 
-    const newUser = {
-      id: Date.now(),
-      name: name.trim(),
-      email: email.trim(),
-      password,
-      role,
-      avatar:
-        role === "driver"
-          ? "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=256&q=80"
-          : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=256&q=80",
-      badge: role === "driver" ? "Motorista em analise" : "Cliente novo",
-      walletLabel: role === "driver" ? "Saldo" : "Fidelidade",
-      walletValue: role === "driver" ? "R$ 0,00" : "0 pontos"
-    };
+    setAuthError("");
 
-    setUsers((accounts) => [...accounts, newUser]);
-    openSession(newUser);
+    if (data.session?.user) {
+      await loadUserProfile(data.session.user);
+      return;
+    }
+
+    setAuthMessage("Cadastro criado. Confirme seu email e depois faca login.");
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    if (isSupabaseConfigured) {
+      await supabase.auth.signOut();
+    }
+
     setCurrentUser(null);
     setView("passenger");
     setReserved(false);
     setMenuOpen(false);
+    setAuthMessage("");
+  }
+
+  if (!authReady) {
+    return (
+      <main className={`app ${theme}`}>
+        <section className="auth-layout">
+          <div className="auth-brand">
+            <div className="brand-mark">
+              <Navigation size={24} />
+            </div>
+            <span>Papaleguas</span>
+            <h1>Carregando sua sessao</h1>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   if (!currentUser) {
     return (
       <main className={`app ${theme}`}>
-        <AuthScreen error={authError} onLogin={handleLogin} onSignup={handleSignup} theme={theme} setTheme={setTheme} />
+        <AuthScreen
+          error={authError}
+          message={authMessage}
+          onLogin={handleLogin}
+          onSignup={handleSignup}
+          theme={theme}
+          setTheme={setTheme}
+        />
       </main>
     );
   }
@@ -257,27 +346,28 @@ function App() {
   );
 }
 
-function AuthScreen({ error, onLogin, onSignup, theme, setTheme }) {
+function AuthScreen({ error, message, onLogin, onSignup, theme, setTheme }) {
   const [mode, setMode] = useState("login");
   const [role, setRole] = useState("passenger");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("cliente@papaleguas.com");
-  const [password, setPassword] = useState("cliente123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  function submitAuth(event) {
+  async function submitAuth(event) {
     event.preventDefault();
-    if (mode === "login") {
-      onLogin({ email, password });
-      return;
-    }
-    onSignup({ name, email, password, role });
-  }
+    setSubmitting(true);
 
-  function fillDemo(demoRole) {
-    setMode("login");
-    setRole(demoRole);
-    setEmail(demoRole === "driver" ? "motorista@papaleguas.com" : "cliente@papaleguas.com");
-    setPassword(demoRole === "driver" ? "motorista123" : "cliente123");
+    try {
+      if (mode === "login") {
+        await onLogin({ email, password });
+        return;
+      }
+
+      await onSignup({ name, email, password, role });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -347,16 +437,12 @@ function AuthScreen({ error, onLogin, onSignup, theme, setTheme }) {
         )}
 
         {error && <div className="auth-error">{error}</div>}
+        {message && <div className="auth-message">{message}</div>}
 
-        <button className="primary-button" type="submit">
+        <button className="primary-button" type="submit" disabled={submitting}>
           <LogIn size={18} />
-          {mode === "login" ? "Entrar" : "Criar e entrar"}
+          {submitting ? "Aguarde..." : mode === "login" ? "Entrar" : "Criar conta"}
         </button>
-
-        <div className="demo-logins">
-          <button type="button" onClick={() => fillDemo("passenger")}>Usar cliente demo</button>
-          <button type="button" onClick={() => fillDemo("driver")}>Usar motorista demo</button>
-        </div>
       </form>
     </section>
   );
