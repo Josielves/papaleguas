@@ -36,7 +36,24 @@ import {
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 import "./styles.css";
 
-const routes = [
+const regionPrices = {
+  same: 7,
+  center: 9,
+  adjacent: 12,
+  extreme: 16
+};
+
+const regionOptions = ["Centro", "Norte", "Sul", "Leste", "Oeste"];
+const extremePairs = new Set(["Norte-Sul", "Sul-Norte", "Leste-Oeste", "Oeste-Leste"]);
+
+function calculateRegionFare(originRegion, destinationRegion) {
+  if (originRegion === destinationRegion) return regionPrices.same;
+  if (originRegion === "Centro" || destinationRegion === "Centro") return regionPrices.center;
+  if (extremePairs.has(`${originRegion}-${destinationRegion}`)) return regionPrices.extreme;
+  return regionPrices.adjacent;
+}
+
+const initialRoutes = [
   {
     id: 1,
     driver: "Marina Costa",
@@ -45,12 +62,18 @@ const routes = [
     vehicle: "Onix Plus prata",
     plate: "BRA-2E18",
     from: "Jardim America",
+    originRegion: "Norte",
     through: ["Centro", "Vila Nova"],
     to: "Distrito Industrial",
+    destinationRegion: "Sul",
     times: ["06:40", "07:20", "18:10"],
+    totalSeats: 4,
     seats: 3,
-    price: 12,
-    eta: "8 min"
+    price: calculateRegionFare("Norte", "Sul"),
+    eta: "8 min",
+    inRoute: true,
+    phone: "(11) 98888-1001",
+    pixKey: "marina@papaleguas.com"
   },
   {
     id: 2,
@@ -60,12 +83,18 @@ const routes = [
     vehicle: "Spin branca",
     plate: "PPL-7A40",
     from: "Parque das Flores",
+    originRegion: "Oeste",
     through: ["Santa Rita", "Rodoviaria"],
     to: "Centro",
+    destinationRegion: "Centro",
     times: ["07:00", "12:15", "17:50"],
+    totalSeats: 6,
     seats: 5,
-    price: 9,
-    eta: "12 min"
+    price: calculateRegionFare("Oeste", "Centro"),
+    eta: "12 min",
+    inRoute: false,
+    phone: "(11) 97777-2202",
+    pixKey: "11977772202"
   },
   {
     id: 3,
@@ -75,12 +104,18 @@ const routes = [
     vehicle: "Kwid verde",
     plate: "FIX-9C21",
     from: "Cidade Alta",
+    originRegion: "Leste",
     through: ["Mercado", "Faculdade"],
     to: "Hospital Municipal",
+    destinationRegion: "Oeste",
     times: ["05:55", "13:30", "22:10"],
+    totalSeats: 4,
     seats: 2,
-    price: 10,
-    eta: "5 min"
+    price: calculateRegionFare("Leste", "Oeste"),
+    eta: "5 min",
+    inRoute: true,
+    phone: "(11) 96666-3303",
+    pixKey: "bianca@papaleguas.com"
   }
 ];
 
@@ -103,6 +138,8 @@ function formatUser(profile, sessionUser) {
     email: sessionUser?.email,
     role,
     avatar: profile?.avatar_url || defaultAvatar,
+    phone: profile?.phone || sessionUser?.user_metadata?.phone || "",
+    pixKey: profile?.pix_key || sessionUser?.user_metadata?.pix_key || "",
     badge: role === "driver" ? "Motorista verificado" : "Cliente Papaleguas",
     walletLabel: role === "driver" ? "Saldo" : "Fidelidade",
     walletValue: role === "driver" ? "R$ 0,00" : "0 pontos"
@@ -117,17 +154,23 @@ function App() {
   const [authMessage, setAuthMessage] = useState("");
   const [authReady, setAuthReady] = useState(false);
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState(routes[0]);
+  const [routesState, setRoutesState] = useState(initialRoutes);
+  const [selectedRouteId, setSelectedRouteId] = useState(initialRoutes[0].id);
   const [reserved, setReserved] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationStatus, setLocationStatus] = useState("Localizacao nao ativada");
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const selected = routesState.find((route) => route.id === selectedRouteId) || routesState[0];
 
   const filteredRoutes = useMemo(() => {
     const term = query.trim().toLowerCase();
-    if (!term) return routes;
-    return routes.filter((route) =>
+    if (!term) return routesState;
+    return routesState.filter((route) =>
       [route.from, route.to, route.driver, route.vehicle, ...route.through].join(" ").toLowerCase().includes(term)
     );
-  }, [query]);
+  }, [query, routesState]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -310,6 +353,7 @@ function App() {
             <NavButton active={view === "driver"} icon={CarFront} label="Motorista" onClick={() => setView("driver")} />
           )}
           <NavButton active={view === "safety"} icon={ShieldCheck} label="Seguranca" onClick={() => setView("safety")} />
+          <NavButton active={view === "profile"} icon={User} label="Perfil" onClick={() => setView("profile")} />
           {currentUser.role === "driver" && (
             <NavButton active={view === "finance"} icon={WalletCards} label="Ganhos" onClick={() => setView("finance")} />
           )}
@@ -330,19 +374,99 @@ function App() {
               routes={filteredRoutes}
               selected={selected}
               setSelected={(route) => {
-                setSelected(route);
+                setSelectedRouteId(route.id);
                 setReserved(false);
+                setChatOpen(false);
               }}
               reserved={reserved}
-              setReserved={setReserved}
+              onReserve={() => {
+                if (selected.seats <= 0) return;
+                setRoutesState((items) =>
+                  items.map((route) => (route.id === selected.id ? { ...route, seats: Math.max(route.seats - 1, 0) } : route))
+                );
+                setReserved(true);
+                setChatOpen(true);
+              }}
+              chatOpen={chatOpen}
+              setChatOpen={setChatOpen}
+              userLocation={userLocation}
+              locationStatus={locationStatus}
+              requestLocation={() => requestLocation(setUserLocation, setLocationStatus)}
             />
           )}
-          {view === "driver" && currentUser.role === "driver" && <DriverArea user={currentUser} />}
+          {view === "driver" && currentUser.role === "driver" && (
+            <DriverArea
+              user={currentUser}
+              onCreateRoute={(route) => {
+                const newRoute = {
+                  ...route,
+                  id: Date.now(),
+                  driver: currentUser.name,
+                  avatar: currentUser.avatar,
+                  rating: 5,
+                  vehicle: "Veiculo cadastrado",
+                  plate: "PPL-2026",
+                  seats: Number(route.totalSeats),
+                  totalSeats: Number(route.totalSeats),
+                  eta: "ao vivo",
+                  phone: currentUser.phone || "Contato pendente",
+                  pixKey: currentUser.pixKey || "Pix nao cadastrado"
+                };
+                setRoutesState((items) => [newRoute, ...items]);
+              }}
+            />
+          )}
           {view === "safety" && <SafetyArea selected={selected} role={currentUser.role} />}
+          {view === "profile" && <ProfileArea user={currentUser} onSave={handleProfileSave} />}
           {view === "finance" && currentUser.role === "driver" && <FinanceArea />}
         </div>
       </section>
     </main>
+  );
+
+  async function handleProfileSave(nextProfile) {
+    const nextUser = {
+      ...currentUser,
+      ...nextProfile,
+      avatar: nextProfile.avatar || currentUser.avatar,
+      pixKey: nextProfile.pixKey,
+      walletValue: currentUser.walletValue
+    };
+
+    setCurrentUser(nextUser);
+
+    if (isSupabaseConfigured && currentUser.id) {
+      await supabase
+        .from("profiles")
+        .update({
+          full_name: nextUser.name,
+          phone: nextUser.phone,
+          pix_key: nextUser.pixKey,
+          avatar_url: nextUser.avatar
+        })
+        .eq("id", currentUser.id);
+    }
+  }
+}
+
+function requestLocation(setUserLocation, setLocationStatus) {
+  if (!navigator.geolocation) {
+    setLocationStatus("Geolocalizacao nao suportada neste navegador");
+    return;
+  }
+
+  setLocationStatus("Solicitando localizacao...");
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const coords = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      };
+      setUserLocation(coords);
+      setLocationStatus(`Localizacao ativa: ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`);
+    },
+    () => setLocationStatus("Permissao de localizacao negada"),
+    { enableHighAccuracy: true, timeout: 8000 }
   );
 }
 
@@ -507,7 +631,20 @@ function NavButton({ active, icon: Icon, label, onClick }) {
   );
 }
 
-function PassengerArea({ query, setQuery, routes, selected, setSelected, reserved, setReserved }) {
+function PassengerArea({
+  query,
+  setQuery,
+  routes,
+  selected,
+  setSelected,
+  reserved,
+  onReserve,
+  chatOpen,
+  setChatOpen,
+  userLocation,
+  locationStatus,
+  requestLocation
+}) {
   return (
     <div className="view-grid passenger-grid">
       <section className="panel search-panel">
@@ -520,6 +657,17 @@ function PassengerArea({ query, setQuery, routes, selected, setSelected, reserve
             <CalendarClock size={17} />
             Hoje
             <ChevronDown size={16} />
+          </button>
+        </div>
+
+        <div className="location-card">
+          <div>
+            <span>API de localizacao</span>
+            <strong>{locationStatus}</strong>
+          </div>
+          <button className="ghost-button" onClick={requestLocation}>
+            <MapPin size={16} />
+            Usar minha localizacao
           </button>
         </div>
 
@@ -550,26 +698,34 @@ function PassengerArea({ query, setQuery, routes, selected, setSelected, reserve
         <DriverSummary route={selected} />
         <div className="booking-detail">
           <InfoLine icon={MapPin} label="Saida" value={selected.from} />
+          <InfoLine icon={Radar} label="Regiao de origem" value={selected.originRegion} />
           <InfoLine icon={Route} label="Passa por" value={selected.through.join(", ")} />
           <InfoLine icon={Navigation} label="Destino" value={selected.to} />
+          <InfoLine icon={Radar} label="Regiao de destino" value={selected.destinationRegion} />
           <InfoLine icon={Clock3} label="Horarios" value={selected.times.join(" / ")} />
+          {userLocation && <InfoLine icon={MapPin} label="Sua localizacao" value={`${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`} />}
         </div>
         <div className="payment-row">
           <div>
-            <span>Valor fixo</span>
+            <span>Valor por regiao via Pix</span>
             <strong>R$ {selected.price},00</strong>
           </div>
           <CreditCard size={22} />
         </div>
-        <button className={`primary-button ${reserved ? "done" : ""}`} onClick={() => setReserved(true)}>
+        <div className="pix-card">
+          <span>Chave Pix do motorista</span>
+          <strong>{selected.pixKey}</strong>
+        </div>
+        <button className={`primary-button ${reserved ? "done" : ""}`} disabled={selected.seats <= 0} onClick={onReserve}>
           {reserved ? <Check size={18} /> : <Plus size={18} />}
-          {reserved ? "Vaga reservada" : "Reservar assento"}
+          {reserved ? "Vaga reservada e chat liberado" : selected.seats <= 0 ? "Sem vagas" : "Reservar assento"}
         </button>
         <div className="mini-actions">
-          <button><MessageCircle size={16} />Chat</button>
+          <button disabled={!reserved} onClick={() => setChatOpen(true)}><MessageCircle size={16} />Chat</button>
           <button><History size={16} />Historico</button>
           <button><Star size={16} />Avaliar</button>
         </div>
+        {chatOpen && reserved && <ChatBox route={selected} />}
       </section>
     </div>
   );
@@ -588,9 +744,45 @@ function RouteCard({ route, selected, onSelect }) {
       <div className="route-card-meta">
         <span><Star size={14} />{route.rating}</span>
         <span>{route.seats} vagas</span>
+        <span>{route.inRoute ? "Em rota agora" : "Programada"}</span>
         <strong>R$ {route.price}</strong>
       </div>
     </button>
+  );
+}
+
+function ChatBox({ route }) {
+  const [messages, setMessages] = useState([
+    { from: "Motorista", text: `Ola! Estou na rota ${route.from} -> ${route.to}.` },
+    { from: "Sistema", text: "Chat liberado porque o assento foi reservado." }
+  ]);
+  const [text, setText] = useState("");
+
+  function sendMessage() {
+    if (!text.trim()) return;
+    setMessages((items) => [...items, { from: "Voce", text: text.trim() }]);
+    setText("");
+  }
+
+  return (
+    <div className="chat-box">
+      <div className="chat-header">
+        <strong>Chat com {route.driver}</strong>
+        <span>{route.phone}</span>
+      </div>
+      <div className="chat-messages">
+        {messages.map((message, index) => (
+          <div className="chat-message" key={`${message.from}-${index}`}>
+            <span>{message.from}</span>
+            <p>{message.text}</p>
+          </div>
+        ))}
+      </div>
+      <div className="chat-input">
+        <input value={text} onChange={(event) => setText(event.target.value)} placeholder="Digite sua mensagem" />
+        <button className="ghost-button" onClick={sendMessage}>Enviar</button>
+      </div>
+    </div>
   );
 }
 
@@ -654,7 +846,38 @@ function InfoLine({ icon: Icon, label, value }) {
   );
 }
 
-function DriverArea({ user }) {
+function DriverArea({ user, onCreateRoute }) {
+  const [draft, setDraft] = useState({
+    from: "Jardim America",
+    originRegion: "Norte",
+    through: "Centro, Vila Nova",
+    to: "Distrito Industrial",
+    destinationRegion: "Sul",
+    times: "06:40, 07:20, 18:10",
+    totalSeats: 4,
+    inRoute: true
+  });
+
+  const calculatedPrice = calculateRegionFare(draft.originRegion, draft.destinationRegion);
+
+  function updateDraft(field, value) {
+    setDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  function createRoute() {
+    onCreateRoute({
+      from: draft.from,
+      originRegion: draft.originRegion,
+      through: draft.through.split(",").map((item) => item.trim()).filter(Boolean),
+      to: draft.to,
+      destinationRegion: draft.destinationRegion,
+      times: draft.times.split(",").map((item) => item.trim()).filter(Boolean),
+      totalSeats: Number(draft.totalSeats),
+      price: calculatedPrice,
+      inRoute: draft.inRoute
+    });
+  }
+
   return (
     <div className="view-grid driver-grid">
       <section className="panel route-builder">
@@ -663,17 +886,33 @@ function DriverArea({ user }) {
             <span>Area do Motorista</span>
             <h1>Criar rota personalizada</h1>
           </div>
-          <button className="primary-button compact"><Plus size={17} />Nova rota</button>
+          <button className="primary-button compact" onClick={createRoute}><Plus size={17} />Publicar rota</button>
+        </div>
+        <div className="fare-board">
+          <div>
+            <span>Tabela por regioes</span>
+            <strong>Centro: R$ {regionPrices.center},00 - Extremos: R$ {regionPrices.extreme},00</strong>
+          </div>
+          <div>
+            <span>Valor calculado</span>
+            <strong>R$ {calculatedPrice},00</strong>
+          </div>
         </div>
         <div className="form-grid">
           <Field label="Motorista" value={user.name} />
           <Field label="Documento" value="CNH validada" icon={FileCheck2} />
-          <Field label="Bairro de saida" value="Jardim America" />
-          <Field label="Destino final" value="Distrito Industrial" />
-          <Field label="Bairros de passagem" value="Centro, Vila Nova" wide />
-          <Field label="Horarios disponiveis" value="06:40, 07:20, 18:10" />
-          <Field label="Quantidade de vagas" value="4" />
-          <Field label="Valor fixo da rota" value="R$ 12,00" />
+          <Field label="Bairro de saida" value={draft.from} onChange={(value) => updateDraft("from", value)} />
+          <SelectField label="Regiao de saida" value={draft.originRegion} options={regionOptions} onChange={(value) => updateDraft("originRegion", value)} />
+          <Field label="Destino final" value={draft.to} onChange={(value) => updateDraft("to", value)} />
+          <SelectField label="Regiao de destino" value={draft.destinationRegion} options={regionOptions} onChange={(value) => updateDraft("destinationRegion", value)} />
+          <Field label="Bairros de passagem" value={draft.through} onChange={(value) => updateDraft("through", value)} wide />
+          <Field label="Horarios disponiveis" value={draft.times} onChange={(value) => updateDraft("times", value)} />
+          <Field label="Quantidade de vagas" value={draft.totalSeats} onChange={(value) => updateDraft("totalSeats", value)} />
+          <Field label="Valor por regiao" value={`R$ ${calculatedPrice},00`} />
+          <label className="toggle-field">
+            <input type="checkbox" checked={draft.inRoute} onChange={(event) => updateDraft("inRoute", event.target.checked)} />
+            Disponibilizar como em rota agora se houver vaga
+          </label>
         </div>
       </section>
       <section className="panel route-management">
@@ -720,15 +959,89 @@ function DriverArea({ user }) {
   );
 }
 
-function Field({ label, value, wide, icon: Icon }) {
+function Field({ label, value, wide, icon: Icon, onChange }) {
   return (
     <label className={`field ${wide ? "wide" : ""}`}>
       <span>{label}</span>
       <div>
         {Icon && <Icon size={17} />}
-        <input defaultValue={value} />
+        <input value={value} onChange={(event) => onChange?.(event.target.value)} readOnly={!onChange} />
       </div>
     </label>
+  );
+}
+
+function SelectField({ label, value, options, onChange }) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <div>
+        <select value={value} onChange={(event) => onChange(event.target.value)}>
+          {options.map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </select>
+      </div>
+    </label>
+  );
+}
+
+function ProfileArea({ user, onSave }) {
+  const [profile, setProfile] = useState({
+    name: user.name,
+    avatar: user.avatar,
+    phone: user.phone || "",
+    pixKey: user.pixKey || ""
+  });
+  const [saved, setSaved] = useState(false);
+
+  async function saveProfile() {
+    await onSave(profile);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2200);
+  }
+
+  return (
+    <div className="view-grid profile-grid">
+      <section className="panel profile-editor">
+        <div className="section-title">
+          <div>
+            <span>Perfil</span>
+            <h1>Foto, contato e Pix</h1>
+          </div>
+        </div>
+        <div className="profile-preview">
+          <img src={profile.avatar || defaultAvatar} alt={`Foto de ${profile.name}`} />
+          <div>
+            <strong>{profile.name}</strong>
+            <span>{user.role === "driver" ? "Motorista" : "Cliente"}</span>
+          </div>
+        </div>
+        <div className="form-grid">
+          <Field label="Nome" value={profile.name} onChange={(value) => setProfile((item) => ({ ...item, name: value }))} />
+          <Field label="Numero de contato" value={profile.phone} onChange={(value) => setProfile((item) => ({ ...item, phone: value }))} />
+          <Field label="URL da foto" value={profile.avatar} onChange={(value) => setProfile((item) => ({ ...item, avatar: value }))} wide />
+          <Field label="Chave Pix cadastrada" value={profile.pixKey} onChange={(value) => setProfile((item) => ({ ...item, pixKey: value }))} wide />
+        </div>
+        <button className="primary-button profile-save" onClick={saveProfile}>
+          <Check size={18} />
+          {saved ? "Perfil salvo" : "Salvar perfil"}
+        </button>
+      </section>
+      <section className="panel">
+        <div className="section-title">
+          <div>
+            <span>Pagamento</span>
+            <h1>Pix no aplicativo</h1>
+          </div>
+        </div>
+        <div className="pix-rules">
+          <div><strong>Cliente</strong><span>visualiza a chave Pix ao reservar o assento.</span></div>
+          <div><strong>Motorista</strong><span>recebe pagamentos pela chave Pix cadastrada no perfil.</span></div>
+          <div><strong>Seguranca</strong><span>contato e chat ficam ligados a reserva.</span></div>
+        </div>
+      </section>
+    </div>
   );
 }
 
