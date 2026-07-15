@@ -13,6 +13,7 @@ create table if not exists public.profiles (
   id            uuid primary key references auth.users(id) on delete cascade,
   name          text not null,
   phone         text,
+  address       text,
   account_type  text not null default 'passenger' check (account_type in ('passenger', 'driver')),
   avatar_url    text,
   created_at    timestamptz not null default now()
@@ -37,11 +38,12 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id, name, account_type)
+  insert into public.profiles (id, name, account_type, phone)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
-    coalesce(new.raw_user_meta_data->>'account_type', 'passenger')
+    coalesce(new.raw_user_meta_data->>'account_type', 'passenger'),
+    new.raw_user_meta_data->>'phone'
   );
   return new;
 end;
@@ -131,6 +133,9 @@ create table if not exists public.routes (
   notes               text,
   status              text not null default 'scheduled' check (status in ('scheduled', 'open', 'full', 'cancelled')),
   started_at          timestamptz,
+  driver_lat          double precision,
+  driver_lng          double precision,
+  location_updated_at timestamptz,
   created_at          timestamptz not null default now()
 );
 
@@ -182,6 +187,9 @@ create table if not exists public.bookings (
   pickup_lat      double precision,
   pickup_lng      double precision,
   status          text not null default 'confirmed' check (status in ('confirmed', 'pending', 'cancelled')),
+  is_for_someone_else boolean not null default false,
+  recipient_name  text,
+  recipient_phone text,
   created_at      timestamptz not null default now()
 );
 
@@ -417,6 +425,34 @@ $$;
 grant execute on function public.start_route to authenticated;
 
 -- -------------------------------------------------------------------------
+-- RPC: update_driver_location
+-- Chamada periodicamente pelo app do motorista (enquanto a rota está
+-- 'open'/'full') para transmitir a posição em tempo real aos passageiros.
+-- -------------------------------------------------------------------------
+create or replace function public.update_driver_location(
+  p_route_id  uuid,
+  p_driver_id uuid,
+  p_lat       double precision,
+  p_lng       double precision
+)
+returns void
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  update public.routes
+  set driver_lat = p_lat,
+      driver_lng = p_lng,
+      location_updated_at = now()
+  where id = p_route_id
+    and driver_id = p_driver_id
+    and status in ('open', 'full');
+end;
+$$;
+
+grant execute on function public.update_driver_location to authenticated;
+
+-- -------------------------------------------------------------------------
 -- RPC: cancel_booking
 -- Cancela a reserva do próprio passageiro, libera o assento e reabre a
 -- rota se necessário — tudo em uma transação atômica e seguindo o mesmo
@@ -467,6 +503,34 @@ grant execute on function public.cancel_booking to authenticated;
 -- -------------------------------------------------------------------------
 alter publication supabase_realtime add table public.messages;
 alter publication supabase_realtime add table public.seats;
+alter publication supabase_realtime add table public.routes;
+
+-- -------------------------------------------------------------------------
+-- Storage — bucket para fotos de perfil (avatares)
+-- -------------------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+create policy "avatares são publicamente visíveis"
+  on storage.objects for select
+  to public
+  using (bucket_id = 'avatars');
+
+create policy "usuário pode enviar seu próprio avatar"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "usuário pode atualizar seu próprio avatar"
+  on storage.objects for update
+  to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "usuário pode apagar seu próprio avatar"
+  on storage.objects for delete
+  to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
 
 -- =========================================================================
 -- Fim do schema

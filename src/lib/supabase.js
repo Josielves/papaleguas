@@ -25,11 +25,11 @@ export function getRegionName(slug) {
 }
 
 // ── Auth ──────────────────────────────────────────────────────
-export async function signUp({ email, password, name, accountType }) {
+export async function signUp({ email, password, name, accountType, phone }) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { name, account_type: accountType } },
+    options: { data: { name, account_type: accountType, phone: phone || null } },
   })
   return { data, error }
 }
@@ -44,6 +44,22 @@ export async function signOut() {
 
 export async function getProfile(userId) {
   return supabase.from('profiles').select('*').eq('id', userId).single()
+}
+
+export async function updateProfile(userId, patch) {
+  return supabase.from('profiles').update(patch).eq('id', userId).select().single()
+}
+
+export async function uploadAvatar(userId, file) {
+  const ext = file.name.split('.').pop()
+  const path = `${userId}/avatar-${Date.now()}.${ext}`
+  const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, {
+    upsert: true,
+    cacheControl: '3600',
+  })
+  if (uploadError) return { data: null, error: uploadError }
+  const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+  return updateProfile(userId, { avatar_url: data.publicUrl })
 }
 
 // ── Rotas ─────────────────────────────────────────────────────
@@ -71,7 +87,7 @@ export async function getOpenRoutes(filters = {}) {
     .from('routes')
     .select(`
       *,
-      driver:profiles!routes_driver_id_fkey(id, name, phone, avatar_url),
+      driver:profiles!routes_driver_id_fkey(id, name, phone, address, avatar_url),
       seats(id, seat_number, status, passenger_id)
     `)
     .in('status', ['open', 'full'])
@@ -90,8 +106,9 @@ export async function getDriverRoutes(driverId) {
     .select(`
       *,
       seats(id, seat_number, status, passenger_id),
-      bookings(id, passenger_id, seat_number, status, pickup_address,
-        passenger:profiles!bookings_passenger_id_fkey(id, name, phone))
+      bookings(id, passenger_id, seat_number, status, pickup_address, pickup_lat, pickup_lng,
+        is_for_someone_else, recipient_name, recipient_phone,
+        passenger:profiles!bookings_passenger_id_fkey(id, name, phone, address, avatar_url))
     `)
     .eq('driver_id', driverId)
     .order('departure_time', { ascending: false })
@@ -113,6 +130,53 @@ export async function startRoute(routeId, driverId) {
   })
 }
 
+// ── Rastreamento em tempo real ─────────────────────────────────
+export async function updateDriverLocation(routeId, driverId, lat, lng) {
+  return supabase.rpc('update_driver_location', {
+    p_route_id: routeId,
+    p_driver_id: driverId,
+    p_lat: lat,
+    p_lng: lng,
+  })
+}
+
+export function subscribeToRoute(routeId, callback) {
+  return supabase
+    .channel(`route:${routeId}`)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'routes',
+      filter: `id=eq.${routeId}`,
+    }, callback)
+    .subscribe()
+}
+
+// Ordena as paradas (embarques dos passageiros) do ponto de origem até o
+// destino final, usando o vizinho mais próximo — uma aproximação simples
+// e sem dependência de serviço externo de roteirização.
+export function orderStops(origin, destination, bookings) {
+  const stops = (bookings ?? []).filter(b => b.status !== 'cancelled' && b.pickup_lat && b.pickup_lng)
+  const ordered = []
+  let current = origin
+  const remaining = [...stops]
+  while (remaining.length) {
+    let nearestIdx = 0
+    let nearestDist = Infinity
+    remaining.forEach((s, i) => {
+      const d = distanceKm(current.lat, current.lng, s.pickup_lat, s.pickup_lng)
+      if (d !== null && d < nearestDist) {
+        nearestDist = d
+        nearestIdx = i
+      }
+    })
+    const [next] = remaining.splice(nearestIdx, 1)
+    ordered.push(next)
+    current = { lat: next.pickup_lat, lng: next.pickup_lng }
+  }
+  return ordered
+}
+
 // ── Reservas ──────────────────────────────────────────────────
 export async function reserveSeat({ routeId, seatNumber, passengerId, pickupAddress, pickupLat, pickupLng }) {
   return supabase.rpc('reserve_seat', {
@@ -132,11 +196,22 @@ export async function getMyBookings(passengerId) {
       *,
       route:routes(
         *,
-        driver:profiles!routes_driver_id_fkey(id, name, phone, avatar_url)
+        driver:profiles!routes_driver_id_fkey(id, name, phone, address, avatar_url)
       )
     `)
     .eq('passenger_id', passengerId)
     .order('created_at', { ascending: false })
+}
+
+export async function updateBookingRecipient(bookingId, { isForSomeoneElse, recipientName, recipientPhone }) {
+  return supabase
+    .from('bookings')
+    .update({
+      is_for_someone_else: isForSomeoneElse,
+      recipient_name: isForSomeoneElse ? recipientName : null,
+      recipient_phone: isForSomeoneElse ? recipientPhone : null,
+    })
+    .eq('id', bookingId)
 }
 
 export async function cancelBooking(bookingId, seatId, routeId, passengerId) {
@@ -235,6 +310,15 @@ export async function geocodeAddress(address) {
   }
 }
 
+// ── WhatsApp (contato rápido, sem necessidade de API/chave) ────
+export function whatsAppLink(phone, message = '') {
+  if (!phone) return null
+  const digits = phone.replace(/\D/g, '')
+  if (!digits) return null
+  const withCountry = digits.startsWith('55') ? digits : `55${digits}`
+  const text = message ? `?text=${encodeURIComponent(message)}` : ''
+  return `https://wa.me/${withCountry}${text}`
+}
 // ── Distância (proximidade) ────────────────────────────────────
 // Fórmula de Haversine — distância em km entre dois pontos por lat/lng.
 export function distanceKm(lat1, lng1, lat2, lng2) {
