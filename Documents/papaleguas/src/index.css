@@ -1,0 +1,843 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================================================================
+   PAPALEGUAS — Design System
+   Conceito: "a rota é a interface". O acostamento (faixa amarela tracejada)
+   é o elemento assinatura — conecta cards, passos do formulário e divide
+   seções, como uma linha de rota vista de cima.
+   ========================================================================= */
+
+:root {
+  /* Asfalto — superfícies */
+  --ink-950: #0b1120;
+  --ink-900: #121a2e;
+  --ink-800: #1b2540;
+  --ink-700: #24304f;
+  --line-700: #2a3655;
+  --line-600: #384365;
+
+  /* Faixa amarela — ação primária / rota */
+  --amber-500: #f5a623;
+  --amber-400: #ffc24d;
+  --amber-950: #3a2a0c;
+
+  /* Rota GPS — motorista / sucesso */
+  --teal-400: #2dd9b5;
+  --teal-500: #17b494;
+  --teal-950: #0b2e28;
+
+  /* Alerta / cancelamento */
+  --coral-500: #ff6b5b;
+  --coral-400: #ff8a7d;
+  --coral-950: #3a1512;
+
+  /* Texto */
+  --cream-100: #f4f1ea;
+  --mist-300: #b7c0d8;
+  --mist-400: #8b95af;
+  --mist-600: #5b6684;
+
+  /* Tipografia */
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* Ritmo */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --shadow-elev: 0 20px 40px -20px rgba(0, 0, 0, 0.55);
+  --dash: repeating-linear-gradient(
+    90deg,
+    var(--amber-500) 0 14px,
+    transparent 14px 24px
+  );
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: local("Space Grotesk");
+}
+
+/* -------------------------------------------------------------------------
+   Base
+   ------------------------------------------------------------------------- */
+@layer base {
+  * {
+    border-color: var(--line-700);
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--ink-950);
+    background-image:
+      radial-gradient(60rem 30rem at 100% -10%, rgba(45, 217, 181, 0.06), transparent),
+      radial-gradient(50rem 25rem at -10% 110%, rgba(245, 166, 35, 0.06), transparent);
+    color: var(--cream-100);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    color: var(--cream-100);
+  }
+
+  h1 { font-size: clamp(1.75rem, 1.4rem + 1.5vw, 2.75rem); font-weight: 700; }
+  h2 { font-size: clamp(1.375rem, 1.2rem + 0.8vw, 1.875rem); font-weight: 700; }
+  h3 { font-size: 1.125rem; font-weight: 600; }
+
+  p, span, label, li { color: var(--mist-300); }
+
+  a { color: var(--teal-400); text-decoration: none; }
+  a:hover { color: var(--teal-500); }
+
+  ::selection {
+    background: var(--amber-500);
+    color: var(--ink-950);
+  }
+
+  /* Foco visível — sempre, teclado e mouse */
+  :focus-visible {
+    outline: 2px solid var(--amber-400);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Elemento assinatura: a faixa tracejada (rota)
+   ------------------------------------------------------------------------- */
+@layer components {
+  .route-divider {
+    position: relative;
+    height: 2px;
+    background: var(--dash);
+    background-size: 24px 2px;
+    opacity: 0.6;
+  }
+
+  .route-divider--animated {
+    animation: drive 1.4s linear infinite;
+  }
+
+  @keyframes drive {
+    to { background-position: 24px 0; }
+  }
+
+  /* Linha de rota vertical usada no stepper e no histórico de reserva */
+  .route-line {
+    width: 2px;
+    background: var(--dash);
+    background-size: 2px 24px;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Layout raiz / navegação
+   ------------------------------------------------------------------------- */
+@layer components {
+  .app-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: rgba(11, 17, 32, 0.85);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line-700);
+  }
+
+  .app-header__inner {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 0.875rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .brand {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .brand::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--amber-500);
+    box-shadow: 0 0 0 4px var(--amber-950);
+  }
+
+  .nav-tabs {
+    display: flex;
+    gap: 0.25rem;
+    background: var(--ink-900);
+    border: 1px solid var(--line-700);
+    border-radius: var(--radius-md);
+    padding: 0.25rem;
+  }
+
+  .nav-tab {
+    padding: 0.5rem 0.875rem;
+    border-radius: calc(var(--radius-md) - 4px);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--mist-400);
+    transition: color 0.15s ease, background-color 0.15s ease;
+  }
+  .nav-tab:hover { color: var(--cream-100); }
+  .nav-tab.is-active {
+    background: var(--amber-500);
+    color: var(--ink-950);
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Botões
+   ------------------------------------------------------------------------- */
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    padding: 0.6875rem 1.25rem;
+    border-radius: var(--radius-sm);
+    transition: transform 0.12s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: 0.5; pointer-events: none; }
+
+  .btn-primary {
+    background: var(--amber-500);
+    color: var(--ink-950);
+    box-shadow: 0 8px 20px -8px rgba(245, 166, 35, 0.5);
+  }
+  .btn-primary:hover { background: var(--amber-400); }
+
+  .btn-secondary {
+    background: var(--ink-800);
+    color: var(--cream-100);
+    border: 1px solid var(--line-600);
+  }
+  .btn-secondary:hover { border-color: var(--teal-400); color: var(--teal-400); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--mist-300);
+  }
+  .btn-ghost:hover { color: var(--cream-100); background: var(--ink-900); }
+
+  .btn-danger {
+    background: var(--coral-950);
+    color: var(--coral-400);
+    border: 1px solid rgba(255, 107, 91, 0.35);
+  }
+  .btn-danger:hover { background: rgba(255, 107, 91, 0.15); }
+
+  .btn-block { width: 100%; }
+  .btn-icon { padding: 0.625rem; }
+}
+
+/* -------------------------------------------------------------------------
+   Formulários / Auth
+   ------------------------------------------------------------------------- */
+@layer components {
+  .field-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--mist-300);
+    margin-bottom: 0.375rem;
+  }
+
+  .input, .select, .textarea {
+    width: 100%;
+    background: var(--ink-900);
+    border: 1px solid var(--line-700);
+    border-radius: var(--radius-sm);
+    padding: 0.6875rem 0.875rem;
+    color: var(--cream-100);
+    font-size: 0.9375rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .input::placeholder, .textarea::placeholder { color: var(--mist-600); }
+  .input:focus, .select:focus, .textarea:focus {
+    border-color: var(--amber-500);
+    box-shadow: 0 0 0 3px var(--amber-950);
+    outline: none;
+  }
+
+  .input-error { border-color: var(--coral-500); }
+  .form-error {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--coral-950);
+    border: 1px solid rgba(255, 107, 91, 0.35);
+    color: var(--coral-400);
+    font-size: 0.8125rem;
+    padding: 0.625rem 0.875rem;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Cards de tipo de conta (Cliente / Motorista) */
+  .account-type-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .account-type-card {
+    position: relative;
+    background: var(--ink-900);
+    border: 1.5px solid var(--line-700);
+    border-radius: var(--radius-md);
+    padding: 1.25rem 1rem;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  .account-type-card:hover { transform: translateY(-2px); }
+  .account-type-card.is-selected {
+    border-color: var(--amber-500);
+    box-shadow: 0 0 0 3px var(--amber-950);
+  }
+  .account-type-card.is-selected::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: var(--amber-500);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+  }
+
+  .auth-shell {
+    max-width: 26rem;
+    margin: 3rem auto;
+    background: var(--ink-900);
+    border: 1px solid var(--line-700);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    box-shadow: var(--shadow-elev);
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Rotas — RouteCard
+   ------------------------------------------------------------------------- */
+@layer components {
+  .route-card {
+    background: var(--ink-900);
+    border: 1px solid var(--line-700);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  .route-card:hover {
+    border-color: var(--line-600);
+    transform: translateY(-2px);
+  }
+
+  .route-card__top { height: 3px; background: var(--dash); background-size: 20px 3px; }
+
+  .route-card__body { padding: 1.25rem; }
+
+  .route-card__path {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.0625rem;
+  }
+  .route-card__path .dot { width: 8px; height: 8px; border-radius: 999px; }
+  .route-card__path .dot--origin { background: var(--teal-400); }
+  .route-card__path .dot--dest { background: var(--amber-500); }
+  .route-card__path .arrow { color: var(--mist-600); }
+
+  .route-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--mist-400);
+    font-family: var(--font-mono);
+  }
+  .route-card__meta span { display: inline-flex; align-items: center; gap: 0.25rem; }
+
+  .route-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--line-700);
+    background: var(--ink-800);
+  }
+
+  /* Selo de preço — inspirado em placa de sinalização */
+  .price-badge {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 1.0625rem;
+    color: var(--amber-500);
+    border: 1.5px dashed var(--amber-500);
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Criação de rota — Stepper de 3 passos
+   ------------------------------------------------------------------------- */
+@layer components {
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .stepper__step {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--mist-500, var(--mist-400));
+  }
+
+  .stepper__badge {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.8125rem;
+    border: 1.5px solid var(--line-600);
+    color: var(--mist-400);
+    flex-shrink: 0;
+  }
+  .stepper__step.is-active .stepper__badge {
+    border-color: var(--amber-500);
+    color: var(--amber-500);
+    background: var(--amber-950);
+  }
+  .stepper__step.is-done .stepper__badge {
+    border-color: var(--teal-400);
+    background: var(--teal-400);
+    color: var(--ink-950);
+  }
+
+  .stepper__label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    display: none;
+  }
+  @media (min-width: 640px) { .stepper__label { display: inline; } }
+
+  .stepper__connector {
+    flex: 1;
+    height: 2px;
+    background: var(--dash);
+    background-size: 12px 2px;
+    opacity: 0.5;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   SeatPicker — interior do carro
+   ------------------------------------------------------------------------- */
+@layer components {
+  .car-interior {
+    background: var(--ink-900);
+    border: 1px solid var(--line-700);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1.25rem;
+  }
+
+  .car-interior__row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0;
+  }
+
+  .car-interior__aisle {
+    width: 2px;
+    height: 2.5rem;
+    background: var(--line-700);
+    justify-self: center;
+  }
+
+  .seat {
+    aspect-ratio: 1;
+    border-radius: var(--radius-sm) var(--radius-sm) 4px 4px;
+    border: 1.5px solid var(--line-600);
+    background: var(--ink-800);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.8125rem;
+    color: var(--mist-300);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .seat:hover:not(.seat--taken) { border-color: var(--teal-400); color: var(--teal-400); }
+  .seat--selected {
+    background: var(--amber-500);
+    border-color: var(--amber-500);
+    color: var(--ink-950);
+  }
+  .seat--taken {
+    background: var(--ink-950);
+    border-color: var(--line-700);
+    color: var(--mist-600);
+    cursor: not-allowed;
+    text-decoration: line-through;
+  }
+  .seat--driver {
+    background: transparent;
+    border-style: dashed;
+    color: var(--mist-600);
+    cursor: default;
+  }
+
+  .seat-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+    font-size: 0.75rem;
+    color: var(--mist-400);
+  }
+  .seat-legend span { display: inline-flex; align-items: center; gap: 0.375rem; }
+  .seat-legend .swatch { width: 0.75rem; height: 0.75rem; border-radius: 3px; }
+}
+
+/* -------------------------------------------------------------------------
+   Chat da reserva
+   ------------------------------------------------------------------------- */
+@layer components {
+  .chat-panel {
+    display: flex;
+    flex-direction: column;
+    height: 26rem;
+    background: var(--ink-900);
+    border: 1px solid var(--line-700);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .chat-panel__header {
+    padding: 0.875rem 1.125rem;
+    border-bottom: 1px solid var(--line-700);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .chat-panel__messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .bubble {
+    max-width: 78%;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+  .bubble--mine {
+    align-self: flex-end;
+    background: var(--amber-500);
+    color: var(--ink-950);
+    border-bottom-right-radius: 4px;
+  }
+  .bubble--theirs {
+    align-self: flex-start;
+    background: var(--ink-800);
+    color: var(--cream-100);
+    border-bottom-left-radius: 4px;
+  }
+  .bubble--optimistic { opacity: 0.6; }
+
+  .chat-panel__composer {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-top: 1px solid var(--line-700);
+  }
+
+  .unread-badge {
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 0.3125rem;
+    border-radius: 999px;
+    background: var(--coral-500);
+    color: var(--ink-950);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Modal
+   ------------------------------------------------------------------------- */
+@layer components {
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 17, 32, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 50;
+  }
+
+  .modal-panel {
+    width: 100%;
+    max-width: 30rem;
+    background: var(--ink-900);
+    border: 1px solid var(--line-700);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-elev);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-panel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.125rem 1.25rem;
+    border-bottom: 1px solid var(--line-700);
+  }
+
+  .modal-panel__body { padding: 1.25rem; }
+}
+
+/* -------------------------------------------------------------------------
+   Dashboards / listas (MyBookings, DriverDashboard)
+   ------------------------------------------------------------------------- */
+@layer components {
+  .page-container {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 3rem;
+  }
+
+  .section-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .stat-tile {
+    background: var(--ink-900);
+    border: 1px solid var(--line-700);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.125rem;
+  }
+  .stat-tile__value {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--teal-400);
+  }
+  .stat-tile__label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--mist-400);
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.625rem;
+    border-radius: 999px;
+  }
+  .status-pill--confirmed { background: var(--teal-950); color: var(--teal-400); }
+  .status-pill--pending { background: var(--amber-950); color: var(--amber-500); }
+  .status-pill--cancelled { background: var(--coral-950); color: var(--coral-400); }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    border: 1.5px dashed var(--line-700);
+    border-radius: var(--radius-lg);
+    color: var(--mist-400);
+  }
+
+  /* Loading — asfalto "andando" */
+  .skeleton {
+    background: linear-gradient(90deg, var(--ink-900) 25%, var(--ink-800) 50%, var(--ink-900) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-move 1.4s ease-in-out infinite;
+    border-radius: var(--radius-sm);
+  }
+  @keyframes skeleton-move {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Utilitários pontuais
+   ------------------------------------------------------------------------- */
+@layer utilities {
+  .text-mono { font-family: var(--font-mono); }
+  .text-display { font-family: var(--font-display); }
+  .surface-raised { background: var(--ink-800); border: 1px solid var(--line-700); }
+}
+
+/* -------------------------------------------------------------------------
+   Scrollbar / inputs nativos (dark mode)
+   ------------------------------------------------------------------------- */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  color-scheme: dark;
+}
+
+/* -------------------------------------------------------------------------
+   Toasts / avatares / mapa mini — usados pelos componentes novos
+   ------------------------------------------------------------------------- */
+@layer components {
+  .avatar {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 999px;
+    background: var(--ink-800);
+    border: 1px solid var(--line-700);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.8125rem;
+    color: var(--teal-400);
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 1.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink-800);
+    border: 1px solid var(--line-600);
+    color: var(--cream-100);
+    padding: 0.75rem 1.125rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-elev);
+    font-size: 0.875rem;
+    font-weight: 600;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+  }
+  .toast--error { border-color: rgba(255, 107, 91, 0.4); color: var(--coral-400); }
+  .toast--success { border-color: rgba(45, 217, 181, 0.4); color: var(--teal-400); }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--mist-400);
+    background: var(--ink-800);
+    border: 1px solid var(--line-700);
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+  }
+
+  .bottom-nav {
+    position: sticky;
+    bottom: 0;
+    z-index: 40;
+    display: none;
+    background: rgba(11, 17, 32, 0.92);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line-700);
+    padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom));
+  }
+  @media (max-width: 639px) {
+    .bottom-nav { display: flex; justify-content: space-around; }
+    .app-header .nav-tabs { display: none; }
+  }
+  .bottom-nav__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--mist-400);
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-sm);
+  }
+  .bottom-nav__item.is-active { color: var(--amber-500); }
+}
