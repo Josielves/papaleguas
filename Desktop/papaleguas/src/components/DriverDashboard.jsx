@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getDriverRoutes, cancelRoute, getRegionName } from '../lib/supabase'
+import { getDriverRoutes, cancelRoute, startRoute, getRegionName } from '../lib/supabase'
 import { formatDateTime, formatPrice, initials } from '../lib/format'
 import { getPrice } from '../lib/supabase'
 import Modal from './Modal'
@@ -12,6 +12,7 @@ export default function DriverDashboard({ user, onError, onSuccess }) {
   const [showCreate, setShowCreate] = useState(false)
   const [activeChat, setActiveChat] = useState(null)
   const [cancelling, setCancelling] = useState(null)
+  const [starting, setStarting] = useState(null)
 
   async function load() {
     setLoading(true)
@@ -32,6 +33,17 @@ export default function DriverDashboard({ user, onError, onSuccess }) {
       load()
     }
     setCancelling(null)
+  }
+
+  async function handleStart(routeId) {
+    setStarting(routeId)
+    const { error } = await startRoute(routeId, user.id)
+    if (error) onError?.('Não foi possível iniciar a rota.')
+    else {
+      onSuccess?.('Rota iniciada! Já está visível para passageiros próximos. 🚗')
+      load()
+    }
+    setStarting(null)
   }
 
   const activeRoutes = routes.filter(r => r.status !== 'cancelled')
@@ -97,6 +109,12 @@ export default function DriverDashboard({ user, onError, onSuccess }) {
                 {route.vehicle_plate && <span>🚙 {route.vehicle_plate}</span>}
               </div>
 
+              {route.status === 'scheduled' && (
+                <p style={{ marginTop: '0.625rem', fontSize: '0.8125rem' }}>
+                  ⏸ Ainda não visível para passageiros — clique em "Iniciar rota" quando sair.
+                </p>
+              )}
+
               {route.bookings?.filter(b => b.status !== 'cancelled').length > 0 && (
                 <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Passageiros</p>
@@ -117,15 +135,26 @@ export default function DriverDashboard({ user, onError, onSuccess }) {
             </div>
             <div className="route-card__footer">
               <span className="price-badge">{formatPrice(getPrice(route.origin_region, route.destination_region))}</span>
-              {route.status !== 'cancelled' && (
-                <button
-                  className="btn btn-danger"
-                  onClick={() => handleCancel(route.id)}
-                  disabled={cancelling === route.id}
-                >
-                  {cancelling === route.id ? 'Cancelando…' : 'Cancelar rota'}
-                </button>
-              )}
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {route.status === 'scheduled' && (
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => handleStart(route.id)}
+                    disabled={starting === route.id}
+                  >
+                    {starting === route.id ? 'Iniciando…' : '▶ Iniciar rota'}
+                  </button>
+                )}
+                {route.status !== 'cancelled' && (
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => handleCancel(route.id)}
+                    disabled={cancelling === route.id}
+                  >
+                    {cancelling === route.id ? 'Cancelando…' : 'Cancelar rota'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -153,6 +182,7 @@ export default function DriverDashboard({ user, onError, onSuccess }) {
 
 function StatusPill({ status }) {
   const map = {
+    scheduled: { label: 'Agendada', cls: 'status-pill--pending' },
     open: { label: 'Aberta', cls: 'status-pill--confirmed' },
     full: { label: 'Lotada', cls: 'status-pill--pending' },
     cancelled: { label: 'Cancelada', cls: 'status-pill--cancelled' },

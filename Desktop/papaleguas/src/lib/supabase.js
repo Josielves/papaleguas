@@ -104,6 +104,15 @@ export async function cancelRoute(routeId) {
     .eq('id', routeId)
 }
 
+export async function startRoute(routeId, driverId) {
+  // Só a partir desse momento a rota aparece para os passageiros e pode
+  // receber reservas — reserve_seat bloqueia rotas com status 'scheduled'.
+  return supabase.rpc('start_route', {
+    p_route_id: routeId,
+    p_driver_id: driverId,
+  })
+}
+
 // ── Reservas ──────────────────────────────────────────────────
 export async function reserveSeat({ routeId, seatNumber, passengerId, pickupAddress, pickupLat, pickupLng }) {
   return supabase.rpc('reserve_seat', {
@@ -224,4 +233,17 @@ export async function geocodeAddress(address) {
   } catch {
     return null
   }
+}
+
+// ── Distância (proximidade) ────────────────────────────────────
+// Fórmula de Haversine — distância em km entre dois pontos por lat/lng.
+export function distanceKm(lat1, lng1, lat2, lng2) {
+  if ([lat1, lng1, lat2, lng2].some(v => v === null || v === undefined)) return null
+  const R = 6371
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
