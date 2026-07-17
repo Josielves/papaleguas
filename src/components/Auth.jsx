@@ -5,7 +5,6 @@ export default function Auth({ onAuthed }) {
   const [mode, setMode] = useState('login') // 'login' | 'signup'
   const [accountType, setAccountType] = useState('passenger') // 'passenger' | 'driver'
   const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -22,7 +21,7 @@ export default function Auth({ onAuthed }) {
       } else {
         if (!name.trim()) throw new Error('Informe seu nome.')
         if (password.length < 6) throw new Error('A senha precisa ter ao menos 6 caracteres.')
-        const { error } = await signUp({ email, password, name, accountType, phone })
+        const { error } = await signUp({ email, password, name, accountType })
         if (error) throw error
       }
       onAuthed?.()
@@ -102,22 +101,6 @@ export default function Auth({ onAuthed }) {
                 placeholder="Como podemos te chamar"
                 required
               />
-            </div>
-
-            <div style={{ marginBottom: '1rem' }}>
-              <label className="field-label" htmlFor="phone">WhatsApp / Telefone</label>
-              <input
-                id="phone"
-                className="input"
-                type="tel"
-                autoComplete="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="(45) 99999-9999"
-              />
-              <p style={{ fontSize: '0.75rem', marginTop: '0.375rem' }}>
-                Usado para motorista e passageiro se contatarem pelo WhatsApp.
-              </p>
             </div>
           </>
         )}

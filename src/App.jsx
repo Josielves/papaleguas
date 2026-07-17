@@ -4,8 +4,6 @@ import Auth from './components/Auth'
 import OpenRoutes from './components/OpenRoutes'
 import MyBookings from './components/MyBookings'
 import DriverDashboard from './components/DriverDashboard'
-import EditProfile from './components/EditProfile'
-import Modal from './components/Modal'
 import Toast, { useToast } from './components/Toast'
 import { initials } from './lib/format'
 
@@ -13,7 +11,6 @@ export default function App() {
   const [session, setSession] = useState(undefined) // undefined = loading
   const [profile, setProfile] = useState(null)
   const [view, setView] = useState('routes')
-  const [showProfile, setShowProfile] = useState(false)
   const { toast, showToast } = useToast()
 
   const loadProfile = useCallback(async (userId) => {
@@ -85,11 +82,7 @@ export default function App() {
             ))}
           </nav>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <button className="avatar" style={{ border: 'none', cursor: 'pointer', padding: 0, overflow: 'hidden' }} title="Editar perfil" onClick={() => setShowProfile(true)}>
-              {profile?.avatar_url
-                ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : initials(displayName)}
-            </button>
+            <div className="avatar" title={displayName}>{initials(displayName)}</div>
             <button className="btn btn-ghost" onClick={() => signOut()}>Sair</button>
           </div>
         </div>
@@ -129,18 +122,6 @@ export default function App() {
       </nav>
 
       <Toast toast={toast} />
-
-      {showProfile && profile && (
-        <Modal title="Meu perfil" onClose={() => setShowProfile(false)}>
-          <EditProfile
-            user={profile}
-            onClose={() => setShowProfile(false)}
-            onUpdated={() => loadProfile(session.user.id)}
-            onError={(m) => showToast(m, 'error')}
-            onSuccess={(m) => showToast(m, 'success')}
-          />
-        </Modal>
-      )}
     </div>
   )
 }

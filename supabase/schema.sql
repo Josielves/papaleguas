@@ -13,7 +13,6 @@ create table if not exists public.profiles (
   id            uuid primary key references auth.users(id) on delete cascade,
   name          text not null,
   phone         text,
-  address       text,
   account_type  text not null default 'passenger' check (account_type in ('passenger', 'driver')),
   avatar_url    text,
   created_at    timestamptz not null default now()
@@ -38,12 +37,11 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id, name, account_type, phone)
+  insert into public.profiles (id, name, account_type)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
-    coalesce(new.raw_user_meta_data->>'account_type', 'passenger'),
-    new.raw_user_meta_data->>'phone'
+    coalesce(new.raw_user_meta_data->>'account_type', 'passenger')
   );
   return new;
 end;
@@ -131,11 +129,7 @@ create table if not exists public.routes (
   vehicle_model       text,
   vehicle_plate       text,
   notes               text,
-  status              text not null default 'scheduled' check (status in ('scheduled', 'open', 'full', 'cancelled')),
-  started_at          timestamptz,
-  driver_lat          double precision,
-  driver_lng          double precision,
-  location_updated_at timestamptz,
+  status              text not null default 'open' check (status in ('open', 'full', 'cancelled')),
   created_at          timestamptz not null default now()
 );
 
@@ -187,9 +181,6 @@ create table if not exists public.bookings (
   pickup_lat      double precision,
   pickup_lng      double precision,
   status          text not null default 'confirmed' check (status in ('confirmed', 'pending', 'cancelled')),
-  is_for_someone_else boolean not null default false,
-  recipient_name  text,
-  recipient_phone text,
   created_at      timestamptz not null default now()
 );
 
@@ -337,9 +328,6 @@ begin
   if v_route.status = 'cancelled' then
     raise exception 'Esta rota foi cancelada';
   end if;
-  if v_route.status = 'scheduled' then
-    raise exception 'Esta rota ainda não foi iniciada pelo motorista';
-  end if;
 
   if p_seat_number is not null and p_seat_number > 0 then
     select * into v_seat
@@ -377,80 +365,6 @@ end;
 $$;
 
 grant execute on function public.reserve_seat to authenticated;
-
--- -------------------------------------------------------------------------
--- RPC: start_route
--- O motorista chama isso quando sai para rodar a rota. Só a partir desse
--- momento a rota fica visível/reservável para os passageiros — a criação
--- da rota sozinha não a torna disponível.
--- -------------------------------------------------------------------------
-create or replace function public.start_route(
-  p_route_id   uuid,
-  p_driver_id  uuid
-)
-returns public.routes
-language plpgsql
-security definer set search_path = public
-as $$
-declare
-  v_route public.routes;
-begin
-  select * into v_route
-  from public.routes
-  where id = p_route_id and driver_id = p_driver_id
-  for update;
-
-  if v_route is null then
-    raise exception 'Rota não encontrada ou você não é o motorista dela';
-  end if;
-
-  if v_route.status = 'cancelled' then
-    raise exception 'Não é possível iniciar uma rota cancelada';
-  end if;
-
-  if v_route.status <> 'scheduled' then
-    return v_route; -- já iniciada, apenas retorna o estado atual
-  end if;
-
-  update public.routes
-  set status = case when available_seats <= 0 then 'full' else 'open' end,
-      started_at = now()
-  where id = p_route_id
-  returning * into v_route;
-
-  return v_route;
-end;
-$$;
-
-grant execute on function public.start_route to authenticated;
-
--- -------------------------------------------------------------------------
--- RPC: update_driver_location
--- Chamada periodicamente pelo app do motorista (enquanto a rota está
--- 'open'/'full') para transmitir a posição em tempo real aos passageiros.
--- -------------------------------------------------------------------------
-create or replace function public.update_driver_location(
-  p_route_id  uuid,
-  p_driver_id uuid,
-  p_lat       double precision,
-  p_lng       double precision
-)
-returns void
-language plpgsql
-security definer set search_path = public
-as $$
-begin
-  update public.routes
-  set driver_lat = p_lat,
-      driver_lng = p_lng,
-      location_updated_at = now()
-  where id = p_route_id
-    and driver_id = p_driver_id
-    and status in ('open', 'full');
-end;
-$$;
-
-grant execute on function public.update_driver_location to authenticated;
 
 -- -------------------------------------------------------------------------
 -- RPC: cancel_booking
@@ -503,34 +417,6 @@ grant execute on function public.cancel_booking to authenticated;
 -- -------------------------------------------------------------------------
 alter publication supabase_realtime add table public.messages;
 alter publication supabase_realtime add table public.seats;
-alter publication supabase_realtime add table public.routes;
-
--- -------------------------------------------------------------------------
--- Storage — bucket para fotos de perfil (avatares)
--- -------------------------------------------------------------------------
-insert into storage.buckets (id, name, public)
-values ('avatars', 'avatars', true)
-on conflict (id) do nothing;
-
-create policy "avatares são publicamente visíveis"
-  on storage.objects for select
-  to public
-  using (bucket_id = 'avatars');
-
-create policy "usuário pode enviar seu próprio avatar"
-  on storage.objects for insert
-  to authenticated
-  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
-
-create policy "usuário pode atualizar seu próprio avatar"
-  on storage.objects for update
-  to authenticated
-  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
-
-create policy "usuário pode apagar seu próprio avatar"
-  on storage.objects for delete
-  to authenticated
-  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
 
 -- =========================================================================
 -- Fim do schema
