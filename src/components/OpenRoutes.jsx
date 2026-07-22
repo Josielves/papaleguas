@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getOpenRoutes, REGIONS } from '../lib/supabase'
+import { getOpenRoutes, REGIONS, getCurrentPosition, distanceKm } from '../lib/supabase'
 import RouteCard from './RouteCard'
 import Modal from './Modal'
 import SeatPicker from './SeatPicker'
@@ -9,6 +9,9 @@ export default function OpenRoutes({ user, onError, onSuccess }) {
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ originRegion: '', destinationRegion: '' })
   const [selectedRoute, setSelectedRoute] = useState(null)
+  const [myLocation, setMyLocation] = useState(null)
+  const [locating, setLocating] = useState(false)
+  const [sortByDistance, setSortByDistance] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -20,6 +23,31 @@ export default function OpenRoutes({ user, onError, onSuccess }) {
 
   useEffect(() => { load() }, [filters.originRegion, filters.destinationRegion])
 
+  async function findNearMe() {
+    setLocating(true)
+    try {
+      const pos = await getCurrentPosition()
+      setMyLocation(pos)
+      setSortByDistance(true)
+    } catch {
+      onError?.('Não foi possível obter sua localização.')
+    } finally {
+      setLocating(false)
+    }
+  }
+
+  let visibleRoutes = routes.filter(r => r.driver_id !== user.id)
+
+  if (sortByDistance && myLocation) {
+    visibleRoutes = visibleRoutes
+      .map(r => ({ ...r, _distance: distanceKm(myLocation.lat, myLocation.lng, r.origin_lat, r.origin_lng) }))
+      .sort((a, b) => {
+        if (a._distance === null) return 1
+        if (b._distance === null) return -1
+        return a._distance - b._distance
+      })
+  }
+
   return (
     <div className="page-container">
       <div className="section-heading">
@@ -27,6 +55,9 @@ export default function OpenRoutes({ user, onError, onSuccess }) {
           <h2>Rotas abertas</h2>
           <p style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>Encontre uma carona para sua região</p>
         </div>
+        <button className="btn btn-secondary" onClick={findNearMe} disabled={locating}>
+          {locating ? 'Localizando…' : sortByDistance ? '📍 Mais próximas primeiro' : '📍 Perto de mim'}
+        </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem', marginBottom: '1.75rem' }}>
@@ -62,7 +93,7 @@ export default function OpenRoutes({ user, onError, onSuccess }) {
         </div>
       )}
 
-      {!loading && routes.length === 0 && (
+      {!loading && visibleRoutes.length === 0 && (
         <div className="empty-state">
           <h3 style={{ marginBottom: '0.5rem' }}>Nenhuma rota encontrada</h3>
           <p>Tente ajustar os filtros ou volte mais tarde.</p>
@@ -70,11 +101,9 @@ export default function OpenRoutes({ user, onError, onSuccess }) {
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(18rem, 1fr))', gap: '1rem' }}>
-        {routes
-          .filter(r => r.driver_id !== user.id)
-          .map(route => (
-            <RouteCard key={route.id} route={route} onReserve={setSelectedRoute} />
-          ))}
+        {visibleRoutes.map(route => (
+          <RouteCard key={route.id} route={route} onReserve={setSelectedRoute} distanceKm={route._distance} />
+        ))}
       </div>
 
       {selectedRoute && (

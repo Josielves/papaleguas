@@ -7,8 +7,6 @@ import DriverDashboard from './components/DriverDashboard'
 import EditProfile from './components/EditProfile'
 import Modal from './components/Modal'
 import Toast, { useToast } from './components/Toast'
-import NotificationBell from './components/NotificationBell'
-import PapaLeguasRunner from './components/PapaLeguasRunner'
 import { initials } from './lib/format'
 
 export default function App() {
@@ -46,7 +44,7 @@ export default function App() {
   if (session === undefined) {
     return (
       <div className="app-shell" style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <PapaLeguasRunner label="Carregando…" />
+        <div className="skeleton" style={{ width: '3rem', height: '3rem', borderRadius: '999px' }} />
       </div>
     )
   }
@@ -87,7 +85,6 @@ export default function App() {
             ))}
           </nav>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <NotificationBell userId={profile?.id} />
             <button className="avatar" style={{ border: 'none', cursor: 'pointer', padding: 0, overflow: 'hidden' }} title="Editar perfil" onClick={() => setShowProfile(true)}>
               {profile?.avatar_url
                 ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -98,7 +95,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="app-main">
+      <main style={{ flex: 1 }}>
         {profile ? (
           <>
             {!isDriver && view === 'routes' && (
