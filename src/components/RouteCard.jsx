@@ -1,7 +1,7 @@
 import { getPrice, getRegionName } from '../lib/supabase'
 import { formatDateTime, formatPrice, initials } from '../lib/format'
 
-export default function RouteCard({ route, onReserve, isOwn = false, footerExtra }) {
+export default function RouteCard({ route, onReserve, isOwn = false, footerExtra, distanceKm }) {
   const availableSeats = route.seats?.filter(s => s.status === 'available').length ?? route.available_seats
   const totalSeats = route.total_seats ?? route.seats?.length ?? 0
   const price = getPrice(route.origin_region, route.destination_region)
@@ -23,6 +23,9 @@ export default function RouteCard({ route, onReserve, isOwn = false, footerExtra
           <span>🕒 {formatDateTime(route.departure_time)}</span>
           <span>💺 {availableSeats}/{totalSeats} livres</span>
           {route.vehicle_model && <span>🚙 {route.vehicle_model}</span>}
+          {distanceKm !== undefined && distanceKm !== null && (
+            <span className="tag">📍 {distanceKm < 1 ? `${Math.round(distanceKm * 1000)} m` : `${distanceKm.toFixed(1)} km`}</span>
+          )}
         </div>
 
         {!isOwn && route.driver && (
