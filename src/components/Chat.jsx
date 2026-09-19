@@ -1,119 +1,88 @@
 import { useEffect, useRef, useState } from 'react'
-import { getMessages, sendMessage, subscribeToMessages, supabase } from '../lib/supabase'
-import { formatTime, initials } from '../lib/format'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 
-export default function Chat({ booking, user, onClose }) {
+// props: routeId, otherUserId (a outra pessoa da conversa: motorista ou passageiro)
+export default function Chat({ routeId, otherUserId }) {
+  const { session } = useAuth()
+  const myId = session?.user?.id
   const [messages, setMessages] = useState([])
   const [text, setText] = useState('')
-  const [loading, setLoading] = useState(true)
-  const scrollRef = useRef(null)
+  const bottomRef = useRef(null)
 
   useEffect(() => {
-    let active = true
-    setLoading(true)
-    getMessages(booking.id).then(({ data }) => {
-      if (active) {
-        setMessages(data ?? [])
-        setLoading(false)
-      }
-    })
-    const channel = subscribeToMessages(booking.id, (payload) => {
-      setMessages(prev => {
-        if (prev.some(m => m.id === payload.new.id)) return prev
-        // Replace matching optimistic message if present
-        const withoutOptimistic = prev.filter(m => !(m.optimistic && m.content === payload.new.content && m.sender_id === payload.new.sender_id))
-        return [...withoutOptimistic, payload.new]
-      })
-    })
-    return () => {
-      active = false
-      supabase.removeChannel(channel)
-    }
-  }, [booking.id])
+    if (!routeId || !myId || !otherUserId) return
+
+    supabase
+      .from('messages')
+      .select('*')
+      .eq('route_id', routeId)
+      .or(`and(sender_id.eq.${myId},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${myId})`)
+      .order('created_at')
+      .then(({ data }) => setMessages(data || []))
+
+    const channel = supabase
+      .channel(`chat-${routeId}-${myId}-${otherUserId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `route_id=eq.${routeId}` },
+        (payload) => {
+          const m = payload.new
+          const belongsToThisThread =
+            (m.sender_id === myId && m.receiver_id === otherUserId) ||
+            (m.sender_id === otherUserId && m.receiver_id === myId)
+          if (belongsToThisThread) setMessages((prev) => [...prev, m])
+        }
+      )
+      .subscribe()
+
+    return () => supabase.removeChannel(channel)
+  }, [routeId, myId, otherUserId])
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
   async function handleSend(e) {
-    e?.preventDefault()
+    e.preventDefault()
+    if (!text.trim()) return
     const content = text.trim()
-    if (!content) return
     setText('')
-    const optimistic = {
-      id: `optimistic-${Date.now()}`,
-      content,
-      sender_id: user.id,
-      created_at: new Date().toISOString(),
-      optimistic: true,
-    }
-    setMessages(prev => [...prev, optimistic])
-    const { error } = await sendMessage({
-      bookingId: booking.id,
-      routeId: booking.route_id ?? booking.route?.id,
-      senderId: user.id,
+    const { error } = await supabase.from('messages').insert({
+      route_id: routeId,
+      sender_id: myId,
+      receiver_id: otherUserId,
       content,
     })
-    if (error) {
-      setMessages(prev => prev.filter(m => m.id !== optimistic.id))
-      setText(content)
-    }
+    if (error) setText(content) // devolve o texto se falhar
   }
-
-  function handleKeyDown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
-    }
-  }
-
-  const otherName = booking.route?.driver?.id === user.id ? booking.passenger?.name : booking.route?.driver?.name
 
   return (
-    <div className="chat-panel">
-      <div className="chat-panel__header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-          <div className="avatar">{initials(otherName || 'Chat')}</div>
-          <div>
-            <p style={{ color: 'var(--cream-100)', fontWeight: 600, fontSize: '0.9375rem' }}>{otherName || 'Conversa'}</p>
-            <p style={{ fontSize: '0.75rem' }}>Reserva #{String(booking.id).slice(0, 8)}</p>
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto space-y-2 p-3">
+        {messages.map((m) => (
+          <div
+            key={m.id}
+            className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${
+              m.sender_id === myId
+                ? 'bg-[#c4ff00] text-[#0b0f08] ml-auto rounded-br-sm'
+                : 'bg-[#0b0f08]/5 text-[#0b0f08] rounded-bl-sm'
+            }`}
+          >
+            {m.content}
           </div>
-        </div>
-        {onClose && (
-          <button className="btn btn-ghost btn-icon" onClick={onClose} aria-label="Fechar chat">✕</button>
-        )}
+        ))}
+        <div ref={bottomRef} />
       </div>
-
-      <div className="chat-panel__messages" ref={scrollRef}>
-        {loading && <p style={{ textAlign: 'center', fontSize: '0.8125rem' }}>Carregando conversa…</p>}
-        {!loading && messages.length === 0 && (
-          <p style={{ textAlign: 'center', fontSize: '0.8125rem' }}>Diga oi para combinar os detalhes da carona 👋</p>
-        )}
-        {messages.map(m => {
-          const mine = m.sender_id === user.id
-          return (
-            <div key={m.id} className={`bubble ${mine ? 'bubble--mine' : 'bubble--theirs'} ${m.optimistic ? 'bubble--optimistic' : ''}`}>
-              <div>{m.content}</div>
-              <div style={{ fontSize: '0.6875rem', opacity: 0.7, marginTop: '0.2rem', textAlign: 'right' }}>
-                {formatTime(m.created_at)}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      <form className="chat-panel__composer" onSubmit={handleSend}>
-        <textarea
-          className="textarea"
-          rows={1}
-          placeholder="Escreva uma mensagem… (Enter envia, Shift+Enter quebra linha)"
+      <form onSubmit={handleSend} className="flex gap-2 p-3 border-t border-[#0b0f08]/10">
+        <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          style={{ resize: 'none' }}
+          placeholder="Escreva uma mensagem…"
+          className="flex-1 px-4 py-2 rounded-xl border border-[#0b0f08]/10 bg-white outline-none focus:border-[#c4ff00]"
         />
-        <button className="btn btn-primary btn-icon" type="submit" aria-label="Enviar" disabled={!text.trim()}>
-          ➤
+        <button type="submit" className="px-4 py-2 rounded-xl bg-[#0b0f08] text-[#c4ff00] font-semibold text-sm">
+          Enviar
         </button>
       </form>
     </div>
