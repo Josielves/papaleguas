@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   REGIONS,
   getPrice,
@@ -9,7 +9,6 @@ import {
   geocodeAddress,
 } from '../lib/supabase'
 import { formatPrice } from '../lib/format'
-import LocationMap from './LocationMap'
 
 const STEPS = [
   { id: 1, label: 'Regiões' },
@@ -65,24 +64,6 @@ export default function CreateRoute({ user, onCreated, onError, onSuccess }) {
     } finally {
       setLocating('')
     }
-  }
-
-  // Assim que o motorista chega no passo de endereços, já tentamos usar a
-  // localização atual como ponto de origem — ele pode arrastar o marcador
-  // ou digitar outro endereço se não for o caso.
-  useEffect(() => {
-    if (step === 2 && form.originLat == null && !locating) {
-      useLocationFor('origin')
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step])
-
-  async function handleMapMove(field, lat, lng) {
-    if (field === 'origin') update({ originLat: lat, originLng: lng })
-    else update({ destinationLat: lat, destinationLng: lng })
-    const address = await reverseGeocode(lat, lng)
-    if (field === 'origin') update({ originAddress: address })
-    else update({ destinationAddress: address })
   }
 
   async function geocodeOnBlur(field) {
@@ -204,7 +185,7 @@ export default function CreateRoute({ user, onCreated, onError, onSuccess }) {
             <label className="field-label" htmlFor="originAddress">
               Endereço de origem ({getRegionName(form.originRegion)})
             </label>
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.625rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
               <input
                 id="originAddress"
                 className="input"
@@ -217,18 +198,12 @@ export default function CreateRoute({ user, onCreated, onError, onSuccess }) {
                 {locating === 'origin' ? '…' : '📍'}
               </button>
             </div>
-            <LocationMap
-              lat={form.originLat}
-              lng={form.originLng}
-              onChange={(lat, lng) => handleMapMove('origin', lat, lng)}
-            />
-            <p style={{ fontSize: '0.75rem', marginTop: '0.375rem' }}>Arraste o marcador ou toque no mapa para ajustar o ponto exato.</p>
           </div>
           <div>
             <label className="field-label" htmlFor="destinationAddress">
               Endereço de destino ({getRegionName(form.destinationRegion)})
             </label>
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.625rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
               <input
                 id="destinationAddress"
                 className="input"
@@ -241,12 +216,6 @@ export default function CreateRoute({ user, onCreated, onError, onSuccess }) {
                 {locating === 'destination' ? '…' : '📍'}
               </button>
             </div>
-            <LocationMap
-              lat={form.destinationLat}
-              lng={form.destinationLng}
-              onChange={(lat, lng) => handleMapMove('destination', lat, lng)}
-            />
-            <p style={{ fontSize: '0.75rem', marginTop: '0.375rem' }}>Arraste o marcador ou toque no mapa para ajustar o ponto exato.</p>
           </div>
         </div>
       )}
