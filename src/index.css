@@ -79,8 +79,9 @@
   body {
     background: var(--ink-950);
     background-image:
-      radial-gradient(60rem 30rem at 100% -10%, rgba(45, 217, 181, 0.06), transparent),
-      radial-gradient(50rem 25rem at -10% 110%, rgba(245, 166, 35, 0.06), transparent);
+      linear-gradient(135deg, rgba(245, 166, 35, 0.08), transparent 28rem),
+      radial-gradient(46rem 30rem at 100% -10%, rgba(45, 217, 181, 0.1), transparent),
+      radial-gradient(42rem 28rem at -10% 110%, rgba(255, 107, 91, 0.08), transparent);
     color: var(--cream-100);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
@@ -178,7 +179,8 @@
     justify-content: space-between;
   }
 
-  .brand {
+  .brand,
+  .brand-lockup {
     font-family: var(--font-display);
     font-weight: 700;
     font-size: 1.25rem;
@@ -186,6 +188,87 @@
     align-items: center;
     gap: 0.5rem;
   }
+
+  .brand-lockup__name {
+    color: var(--cream-100);
+    letter-spacing: 0;
+  }
+
+  .roadbird-mark {
+    width: 3.25rem;
+    height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(245, 166, 35, 0.2), rgba(45, 217, 181, 0.12));
+    border: 1px solid rgba(245, 166, 35, 0.35);
+    box-shadow: 0 10px 24px -16px rgba(245, 166, 35, 0.8);
+    overflow: hidden;
+  }
+
+  .roadbird-mark svg {
+    width: 2.9rem;
+    height: 1.9rem;
+  }
+
+  .roadbird-mark path,
+  .roadbird-mark circle {
+    vector-effect: non-scaling-stroke;
+  }
+
+  .roadbird-mark__body,
+  .roadbird-mark__head,
+  .roadbird-mark__tail,
+  .roadbird-mark__wing,
+  .roadbird-mark__leg,
+  .roadbird-mark__beak,
+  .roadbird-mark__speed {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .roadbird-mark__body,
+  .roadbird-mark__head,
+  .roadbird-mark__tail {
+    stroke: var(--amber-500);
+    stroke-width: 5;
+  }
+
+  .roadbird-mark__wing,
+  .roadbird-mark__leg,
+  .roadbird-mark__beak {
+    stroke: var(--teal-400);
+    stroke-width: 4;
+  }
+
+  .roadbird-mark__speed {
+    stroke: var(--mist-300);
+    stroke-width: 3;
+    opacity: 0.55;
+  }
+
+  .roadbird-mark__eye {
+    fill: var(--cream-100);
+  }
+
+  .brand-lockup:hover .speed-a,
+  .toast .speed-a {
+    animation: speedline 0.9s linear infinite;
+  }
+
+  .brand-lockup:hover .speed-b,
+  .toast .speed-b {
+    animation: speedline 0.9s linear infinite 0.12s;
+  }
+
+  @keyframes speedline {
+    0% { transform: translateX(0); opacity: 0.15; }
+    50% { opacity: 0.85; }
+    100% { transform: translateX(-12px); opacity: 0.1; }
+  }
+
   .brand::before {
     content: "";
     width: 10px;
@@ -415,6 +498,168 @@
     border: 1.5px dashed var(--amber-500);
     border-radius: 999px;
     padding: 0.25rem 0.75rem;
+  }
+
+  .search-hero {
+    display: grid;
+    grid-template-columns: minmax(18rem, 0.8fr) minmax(20rem, 1.2fr);
+    gap: 1.25rem;
+    align-items: stretch;
+    margin-bottom: 1.25rem;
+  }
+
+  .search-hero__copy {
+    position: relative;
+    min-height: 23rem;
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--line-700);
+    background:
+      linear-gradient(140deg, rgba(18, 26, 46, 0.96), rgba(27, 37, 64, 0.86)),
+      repeating-linear-gradient(125deg, transparent 0 20px, rgba(245, 166, 35, 0.08) 20px 22px);
+    overflow: hidden;
+    box-shadow: var(--shadow-elev);
+  }
+
+  .search-hero__copy::after {
+    content: "";
+    position: absolute;
+    right: -3rem;
+    bottom: 1.5rem;
+    width: 18rem;
+    height: 7rem;
+    background: var(--dash);
+    background-size: 32px 4px;
+    opacity: 0.18;
+    transform: rotate(-18deg);
+  }
+
+  .search-hero__copy h1 {
+    max-width: 12ch;
+    margin: 0.2rem 0 0.875rem;
+  }
+
+  .search-hero__copy p:not(.eyebrow) {
+    max-width: 31rem;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .eyebrow {
+    color: var(--teal-400);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .hero-actions {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  .filter-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.875rem;
+    margin-bottom: 1.75rem;
+    padding: 1rem;
+    border: 1px solid var(--line-700);
+    border-radius: var(--radius-md);
+    background: rgba(18, 26, 46, 0.72);
+  }
+
+  .route-map-shell {
+    min-height: 23rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--line-700);
+    background: var(--ink-900);
+    overflow: hidden;
+    box-shadow: var(--shadow-elev);
+  }
+
+  .route-map-shell__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.125rem;
+    border-bottom: 1px solid var(--line-700);
+    background: linear-gradient(90deg, rgba(11, 17, 32, 0.92), rgba(27, 37, 64, 0.78));
+  }
+
+  .route-map-shell__header h3 {
+    margin-top: 0.15rem;
+  }
+
+  .route-map {
+    width: 100%;
+    height: 18rem;
+    background: var(--ink-800);
+  }
+
+  .route-map .leaflet-tile-pane {
+    filter: saturate(0.75) brightness(0.68) contrast(1.12);
+  }
+
+  .route-map .leaflet-control-attribution {
+    background: rgba(11, 17, 32, 0.78);
+    color: var(--mist-300);
+  }
+
+  .live-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    white-space: nowrap;
+    color: var(--teal-400);
+    background: rgba(45, 217, 181, 0.1);
+    border: 1px solid rgba(45, 217, 181, 0.28);
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .live-chip span {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--teal-400);
+    box-shadow: 0 0 0 0 rgba(45, 217, 181, 0.6);
+    animation: pulse-live 1.5s ease-out infinite;
+  }
+
+  @keyframes pulse-live {
+    to { box-shadow: 0 0 0 0.6rem rgba(45, 217, 181, 0); }
+  }
+
+  @media (max-width: 860px) {
+    .search-hero {
+      grid-template-columns: 1fr;
+    }
+
+    .search-hero__copy {
+      min-height: auto;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .filter-bar {
+      grid-template-columns: 1fr;
+    }
+
+    .route-card__footer,
+    .route-map-shell__header {
+      align-items: flex-start;
+      flex-direction: column;
+    }
   }
 }
 
@@ -788,7 +1033,7 @@ input[type="datetime-local"] {
     background: var(--ink-800);
     border: 1px solid var(--line-600);
     color: var(--cream-100);
-    padding: 0.75rem 1.125rem;
+    padding: 0.65rem 1rem 0.65rem 0.65rem;
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-elev);
     font-size: 0.875rem;
@@ -797,6 +1042,12 @@ input[type="datetime-local"] {
     display: flex;
     align-items: center;
     gap: 0.625rem;
+  }
+
+  .toast .roadbird-mark {
+    width: 2.75rem;
+    height: 2rem;
+    flex-shrink: 0;
   }
   .toast--error { border-color: rgba(255, 107, 91, 0.4); color: var(--coral-400); }
   .toast--success { border-color: rgba(45, 217, 181, 0.4); color: var(--teal-400); }

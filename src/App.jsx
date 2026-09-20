@@ -5,6 +5,7 @@ import DriverDashboard from './components/DriverDashboard'
 import OpenRoutes from './components/OpenRoutes'
 import MyBookings from './components/MyBookings'
 import Toast from './components/Toast'
+import Logo from './components/Logo'
 
 function Shell() {
   const { session, profile, loading, signOut } = useAuth()
@@ -30,7 +31,7 @@ function Shell() {
     <div className="app-shell">
       <header className="app-header">
         <div className="app-header__inner">
-          <span className="brand">Papaleguas</span>
+          <Logo />
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             {!isDriver && (
               <nav className="nav-tabs" aria-label="Navegação principal">

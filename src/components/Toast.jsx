@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import Logo from './Logo'
 
 export function useToast() {
   const [toast, setToast] = useState(null)
@@ -18,7 +19,8 @@ export default function Toast({ toast }) {
   const cls = toast.type === 'error' ? 'toast toast--error' : toast.type === 'success' ? 'toast toast--success' : 'toast'
   return (
     <div className={cls} role="status">
-      {toast.message}
+      <Logo compact />
+      <span>{toast.message}</span>
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { getOpenRoutes, REGIONS, getCurrentPosition, distanceKm } from '../lib/s
 import RouteCard from './RouteCard'
 import Modal from './Modal'
 import SeatPicker from './SeatPicker'
+import RouteMap from './RouteMap'
 
 export default function OpenRoutes({ user, onError, onSuccess }) {
   const [routes, setRoutes] = useState([])
@@ -50,17 +51,22 @@ export default function OpenRoutes({ user, onError, onSuccess }) {
 
   return (
     <div className="page-container">
-      <div className="section-heading">
-        <div>
-          <h2>Rotas abertas</h2>
-          <p style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>Encontre uma carona para sua região</p>
+      <div className="search-hero">
+        <div className="search-hero__copy">
+          <p className="eyebrow">Busca inteligente</p>
+          <h1>Encontre uma rota perto de voce</h1>
+          <p>Veja o movimento no mapa, filtre por regiao e reserve seu assento em poucos toques.</p>
+          <div className="hero-actions">
+            <button className="btn btn-primary" onClick={findNearMe} disabled={locating}>
+              {locating ? 'Localizando...' : sortByDistance ? 'Mais proximas primeiro' : 'Perto de mim'}
+            </button>
+            <span className="live-chip"><span /> {visibleRoutes.length} rotas visiveis</span>
+          </div>
         </div>
-        <button className="btn btn-secondary" onClick={findNearMe} disabled={locating}>
-          {locating ? 'Localizando…' : sortByDistance ? '📍 Mais próximas primeiro' : '📍 Perto de mim'}
-        </button>
+        <RouteMap routes={visibleRoutes} myLocation={myLocation} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem', marginBottom: '1.75rem' }}>
+      <div className="filter-bar">
         <div>
           <label className="field-label" htmlFor="filterOrigin">Origem</label>
           <select
