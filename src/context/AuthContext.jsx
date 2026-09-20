@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   async function loadProfile(userId) {
+    if (!userId) return
     const { data } = await supabase
       .from('profiles')
       .select('*')
@@ -40,16 +41,14 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: { data: { name: fullName, account_type: role, phone } },
     })
     if (error) throw error
 
-    // o trigger on_auth_user_created já criou a linha em profiles;
-    // aqui só completamos com papel e telefone
     if (data.user) {
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ full_name: fullName, role, phone })
+        .update({ name: fullName, account_type: role, phone })
         .eq('id', data.user.id)
       if (updateError) throw updateError
       await loadProfile(data.user.id)
@@ -67,8 +66,12 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut()
   }
 
+  const normalizedProfile = profile
+    ? { ...profile, role: profile.account_type, full_name: profile.name }
+    : null
+
   return (
-    <AuthContext.Provider value={{ session, profile, loading, signUp, signIn, signOut, reloadProfile: () => loadProfile(session?.user?.id) }}>
+    <AuthContext.Provider value={{ session, profile: normalizedProfile, loading, signUp, signIn, signOut, reloadProfile: () => loadProfile(session?.user?.id) }}>
       {children}
     </AuthContext.Provider>
   )

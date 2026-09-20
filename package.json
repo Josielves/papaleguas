@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "validate": "npm run build",
+    "validate:audit": "npm audit --audit-level=moderate"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
