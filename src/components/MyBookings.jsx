@@ -89,9 +89,9 @@ export default function MyBookings({ user, onError, onSuccess }) {
             <span className="tag">{waitlist.length} aguardando</span>
           </div>
           <div className="waitlist-grid">
-            {waitlist.map((entry, index) => (
+            {waitlist.map((entry) => (
               <article className="waitlist-card" key={entry.id}>
-                <span className="waitlist-position">#{index + 1}</span>
+                <span className="waitlist-position">Na fila</span>
                 <div>
                   <strong>{getRegionName(entry.route?.origin_region)} → {getRegionName(entry.route?.destination_region)}</strong>
                   <p>{formatDateTime(entry.route?.departure_time)}</p>

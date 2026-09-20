@@ -85,6 +85,8 @@ export function getDriverRoutes(driverId) {
       )
     `)
     .eq('driver_id', driverId)
+    .neq('bookings.status', 'cancelled')
+    .eq('route_waitlist.status', 'waiting')
     .order('departure_time', { ascending: true })
     .limit(200)
 }

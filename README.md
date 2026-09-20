@@ -32,6 +32,21 @@ Aplicativo React + Tailwind para transporte compartilhado por rotas fixas entre 
 - Ponto de embarque opcional com GPS
 - Confirmação com resumo antes de finalizar
 - Cancelamento de reserva com liberação automática do assento
+- Lista de espera para rotas lotadas
+- Promoção automática da primeira pessoa da fila após um cancelamento
+- Notificação para passageiro promovido e motorista
+
+### Painel operacional do motorista
+- Fila de rotas agendadas para o motorista escolher e iniciar
+- Indicadores de ocupação, passageiros e receita estimada
+- Mapa das rotas planejadas e em operação
+- Manifesto de passageiros com contato e ponto de embarque
+- Acompanhamento da lista de espera de cada rota
+
+### Perfil do usuário
+- Foto, nome, telefone, endereço e e-mail da conta
+- Modelo, cor e placa do veículo para motoristas
+- Dados do veículo preenchidos automaticamente ao criar uma rota
 
 ### 🛣️ Criação de Rota (Motorista) — 3 passos
 **Passo 1 - Regiões:**
@@ -71,7 +86,16 @@ npm install
 
 ### 2. Configurar Supabase
 1. Crie um projeto em [supabase.com](https://supabase.com)
-2. Vá em **SQL Editor** e execute `supabase/schema.sql`
+2. Vá em **SQL Editor** e execute, nesta ordem:
+
+```text
+supabase/schema.sql
+supabase/migration_scale_and_security.sql
+supabase/migration_operations_and_waitlist.sql
+```
+
+Se o schema principal já estiver instalado, execute somente as migrações que ainda não foram aplicadas.
+
 3. Copie as variáveis de ambiente:
 
 ```bash
@@ -102,10 +126,15 @@ npm run dev
 | `seats` | Assentos de cada rota |
 | `bookings` | Reservas dos passageiros |
 | `messages` | Mensagens do chat por reserva |
+| `route_waitlist` | Fila de espera das rotas lotadas |
+| `notifications` | Alertas de promoção, cancelamento e reposição |
 
 ### Funções SQL
 - `reserve_seat(...)` — reserva atômica sem condições de corrida
 - `create_route_with_seats(...)` — cria rota + assentos em uma transação
+- `join_route_waitlist(...)` — adiciona passageiro à fila de uma rota lotada
+- `cancel_booking(...)` — cancela e promove automaticamente o primeiro da fila
+- `cancel_route(...)` — encerra a rota e notifica passageiros afetados
 
 ---
 

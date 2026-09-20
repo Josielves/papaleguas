@@ -18,6 +18,16 @@ Resultado:
 - Bundle principal: 563.32 kB minificado, 160.59 kB gzip. Precisa de code splitting antes de trafego alto.
 - Auditoria npm falhando por 6 vulnerabilidades: 3 moderadas e 3 altas. `npm audit fix` resolve parte; `esbuild/vite` exige decisao de upgrade maior.
 
+### Fluxos operacionais adicionados
+
+- Motorista cria uma rota agendada e escolhe quando inicia-la no painel.
+- Passageiro visualiza rotas abertas, escolhe um assento livre ou entra na fila de uma rota lotada.
+- Cancelamento de reserva promove atomicamente a primeira pessoa da fila para o mesmo assento.
+- Motorista e passageiro promovido recebem notificacao persistida no banco e em tempo real.
+- Perfil permite foto e contato; motoristas tambem cadastram modelo, cor e placa do veiculo.
+
+Para estes fluxos, aplique `supabase/migration_operations_and_waitlist.sql` depois das migracoes anteriores.
+
 ## Fluxos que precisam passar antes de deploy
 
 - Cadastro de passageiro cria `profiles.name`, `profiles.phone`, `profiles.account_type = passenger`.
@@ -29,6 +39,10 @@ Resultado:
 - Passageiro reserva assento; `seats.status` muda para `reserved`, `bookings.status` fica `confirmed`, `routes.available_seats` decrementa.
 - Dois passageiros tentando o mesmo assento ao mesmo tempo: apenas um deve vencer.
 - Passageiro cancela reserva; assento volta para `available`.
+- Passageiro cancela com fila ativa; o assento permanece `reserved` e passa para a primeira pessoa da fila.
+- Rota lotada permite entrar e sair da lista de espera sem duplicidade.
+- Cancelamento da rota encerra reservas e fila e cria notificacoes para os passageiros afetados.
+- Perfil do motorista salva foto, contato, modelo, cor e placa do veiculo.
 - Chat entre passageiro e motorista salva mensagens com `booking_id`.
 - Transmissao de localizacao do motorista atualiza `routes.driver_lat`, `routes.driver_lng` e aparece no mapa.
 - RLS: passageiro nao le reservas de outros passageiros; motorista so ve reservas das proprias rotas.

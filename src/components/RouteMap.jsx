@@ -42,15 +42,8 @@ export default function RouteMap({ routes = [], myLocation, showHeader = true })
     [routes]
   )
 
-  const fallbackRoutes = mapRoutes.length > 0
-    ? mapRoutes
-    : [
-      { route: { id: 'demo-1', origin_region: 'centro', destination_region: 'norte', available_seats: 0 }, origin: REGION_POINTS.centro, destination: REGION_POINTS.norte },
-      { route: { id: 'demo-2', origin_region: 'oeste', destination_region: 'leste', available_seats: 0 }, origin: REGION_POINTS.oeste, destination: REGION_POINTS.leste },
-    ]
-
   const points = [
-    ...fallbackRoutes.flatMap((item) => [item.origin, item.destination]),
+    ...mapRoutes.flatMap((item) => [item.origin, item.destination]),
     myLocation ? [myLocation.lat, myLocation.lng] : null,
   ]
 
@@ -75,7 +68,7 @@ export default function RouteMap({ routes = [], myLocation, showHeader = true })
           attribution='&copy; OpenStreetMap contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {fallbackRoutes.map(({ route, origin, destination }) => (
+        {mapRoutes.map(({ route, origin, destination }) => (
           <Fragment key={route.id}>
             <Polyline positions={[origin, destination]} pathOptions={{ color: '#f5a623', weight: 5, opacity: 0.8, dashArray: '10 12' }} />
             <CircleMarker center={origin} radius={8} pathOptions={{ color: '#2dd9b5', fillColor: '#2dd9b5', fillOpacity: 0.95 }}>

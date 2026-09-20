@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { signIn, signUp } from '../lib/supabase'
+import Logo from './Logo'
 
 export default function Auth({ onAuthed }) {
   const [mode, setMode] = useState('login') // 'login' | 'signup'
@@ -36,9 +37,7 @@ export default function Auth({ onAuthed }) {
   return (
     <div className="auth-shell">
       <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-        <div className="brand" style={{ justifyContent: 'center', fontSize: '1.5rem' }}>
-          Papaleguas
-        </div>
+        <div style={{ display: 'flex', justifyContent: 'center' }}><Logo /></div>
         <p style={{ marginTop: '0.375rem', fontSize: '0.875rem' }}>
           Caronas fixas entre regiões da cidade
         </p>

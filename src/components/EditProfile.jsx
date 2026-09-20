@@ -16,6 +16,10 @@ export default function EditProfile({ user, onClose, onUpdated, onError, onSucce
   async function handleAvatarChange(e) {
     const file = e.target.files?.[0]
     if (!file) return
+    if (!file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) {
+      onError?.('Escolha uma imagem de até 5 MB.')
+      return
+    }
     setUploading(true)
     const { data, error } = await uploadAvatar(user.id, file)
     if (error) onError?.('Não foi possível enviar a foto.')

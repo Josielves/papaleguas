@@ -3,42 +3,12 @@
 -- Execute depois de schema.sql e migration_scale_and_security.sql.
 -- =========================================================================
 
--- Perfil operacional do motorista.
-alter table public.profiles add column if not exists email text;
+-- Perfil operacional do motorista. O e-mail continua protegido em auth.users
+-- e e lido pelo frontend apenas a partir da sessao autenticada.
 alter table public.profiles add column if not exists vehicle_model text;
 alter table public.profiles add column if not exists vehicle_plate text;
 alter table public.profiles add column if not exists vehicle_color text;
 alter table public.profiles add column if not exists updated_at timestamptz not null default now();
-
-update public.profiles p
-set email = u.email
-from auth.users u
-where p.id = u.id and p.email is null;
-
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer set search_path = public
-as $$
-begin
-  insert into public.profiles (
-    id, name, email, account_type, phone, vehicle_model, vehicle_plate, vehicle_color
-  ) values (
-    new.id,
-    coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
-    new.email,
-    coalesce(new.raw_user_meta_data->>'account_type', 'passenger'),
-    new.raw_user_meta_data->>'phone',
-    new.raw_user_meta_data->>'vehicle_model',
-    upper(new.raw_user_meta_data->>'vehicle_plate'),
-    new.raw_user_meta_data->>'vehicle_color'
-  )
-  on conflict (id) do update set
-    email = excluded.email,
-    updated_at = now();
-  return new;
-end;
-$$;
 
 -- Caixa de notificacoes do usuario.
 create table if not exists public.notifications (
@@ -192,6 +162,7 @@ declare
   v_route public.routes;
   v_next public.route_waitlist;
   v_promoted public.bookings;
+  v_has_next boolean;
 begin
   if auth.uid() is null or auth.uid() <> p_passenger_id then
     raise exception 'Usuario nao autorizado para cancelar esta reserva';
@@ -218,8 +189,9 @@ begin
   order by created_at, id
   limit 1
   for update skip locked;
+  v_has_next := found;
 
-  if v_next is not null and v_route.status <> 'cancelled' and v_route.departure_time > now() then
+  if v_has_next and v_route.status <> 'cancelled' and v_route.departure_time > now() then
     update public.seats
     set status = 'reserved', passenger_id = v_next.passenger_id, reserved_at = now()
     where id = v_booking.seat_id;
@@ -272,9 +244,79 @@ begin
 end;
 $$;
 
+-- O cancelamento de uma rota encerra reservas e fila, e avisa todos os
+-- passageiros afetados em uma unica transacao.
+create or replace function public.cancel_route(
+  p_route_id uuid,
+  p_driver_id uuid
+)
+returns void
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_route public.routes;
+begin
+  if auth.uid() is null or auth.uid() <> p_driver_id then
+    raise exception 'Usuario nao autorizado para cancelar esta rota';
+  end if;
+
+  select * into v_route
+  from public.routes
+  where id = p_route_id and driver_id = p_driver_id
+  for update;
+
+  if v_route is null then
+    raise exception 'Rota nao encontrada';
+  end if;
+  if v_route.status = 'cancelled' then
+    return;
+  end if;
+
+  insert into public.notifications (user_id, type, title, message, data)
+  select affected.passenger_id,
+         'route_cancelled',
+         'Rota cancelada pelo motorista',
+         'A rota foi cancelada e nao sera mais realizada.',
+         jsonb_build_object('route_id', p_route_id)
+  from (
+    select passenger_id from public.bookings
+    where route_id = p_route_id and status in ('confirmed', 'pending')
+    union
+    select passenger_id from public.route_waitlist
+    where route_id = p_route_id and status = 'waiting'
+  ) affected;
+
+  update public.bookings
+  set status = 'cancelled'
+  where route_id = p_route_id and status in ('confirmed', 'pending');
+
+  update public.seats
+  set status = 'available', passenger_id = null, reserved_at = null
+  where route_id = p_route_id;
+
+  update public.route_waitlist
+  set status = 'expired'
+  where route_id = p_route_id and status = 'waiting';
+
+  update public.routes
+  set status = 'cancelled', available_seats = total_seats
+  where id = p_route_id;
+end;
+$$;
+
+revoke all on function public.join_route_waitlist from public;
+revoke all on function public.leave_route_waitlist from public;
+revoke all on function public.cancel_booking from public;
+revoke all on function public.cancel_route from public;
 grant execute on function public.join_route_waitlist to authenticated;
 grant execute on function public.leave_route_waitlist to authenticated;
 grant execute on function public.cancel_booking to authenticated;
+grant execute on function public.cancel_route to authenticated;
+
+create index if not exists routes_bookable_search_idx
+  on public.routes (status, origin_region, destination_region, departure_time)
+  where status in ('open', 'full');
 
 do $$
 begin
