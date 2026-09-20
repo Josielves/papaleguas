@@ -35,7 +35,11 @@ const emptyForm = {
 
 export default function CreateRoute({ user, onCreated, onError, onSuccess }) {
   const [step, setStep] = useState(1)
-  const [form, setForm] = useState(emptyForm)
+  const [form, setForm] = useState(() => ({
+    ...emptyForm,
+    vehicleModel: user.vehicle_model ?? '',
+    vehiclePlate: user.vehicle_plate ?? '',
+  }))
   const [locating, setLocating] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -108,7 +112,11 @@ export default function CreateRoute({ user, onCreated, onError, onSuccess }) {
       })
       if (error) throw error
       onSuccess?.('Rota criada com sucesso! 🚗')
-      setForm(emptyForm)
+      setForm({
+        ...emptyForm,
+        vehicleModel: user.vehicle_model ?? '',
+        vehiclePlate: user.vehicle_plate ?? '',
+      })
       setStep(1)
       onCreated?.()
     } catch (err) {

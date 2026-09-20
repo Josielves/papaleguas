@@ -1,16 +1,35 @@
-import { useEffect, useState } from 'react'
-import { getDriverRoutes, cancelRoute, startRoute, getRegionName, orderStops, whatsAppLink, getPrice } from '../lib/supabase'
-import { formatDateTime, formatPrice, initials } from '../lib/format'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  getDriverRoutes,
+  cancelRoute,
+  startRoute,
+  getRegionName,
+  orderStops,
+  whatsAppLink,
+  getPrice,
+} from '../lib/supabase'
+import { formatPrice, initials } from '../lib/format'
 import { useLocationBroadcast } from '../lib/useLocationBroadcast'
 import Modal from './Modal'
 import Chat from './Chat'
 import CreateRoute from './CreateRoute'
+import RouteMap from './RouteMap'
+
+const FILTERS = [
+  { id: 'all', label: 'Todas' },
+  { id: 'scheduled', label: 'Agendadas' },
+  { id: 'active', label: 'Em operação' },
+  { id: 'full', label: 'Lotadas' },
+  { id: 'cancelled', label: 'Canceladas' },
+]
 
 export default function DriverDashboard({ user, onError, onSuccess }) {
   const [routes, setRoutes] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [activeChat, setActiveChat] = useState(null)
+  const [expandedRoute, setExpandedRoute] = useState(null)
+  const [filter, setFilter] = useState('all')
   const [cancelling, setCancelling] = useState(null)
   const [starting, setStarting] = useState(null)
   const { activeRouteId, start: startBroadcast, stop: stopBroadcast } = useLocationBroadcast()
@@ -26,12 +45,13 @@ export default function DriverDashboard({ user, onError, onSuccess }) {
   useEffect(() => { load() }, [user.id])
   useEffect(() => () => stopBroadcast(), [stopBroadcast])
 
-  async function handleCancel(routeId) {
-    setCancelling(routeId)
-    const { error } = await cancelRoute(routeId)
+  async function handleCancel(route) {
+    if (!window.confirm('Cancelar esta rota e avisar que ela não está mais disponível?')) return
+    setCancelling(route.id)
+    const { error } = await cancelRoute(route.id, user.id)
     if (error) onError?.('Não foi possível cancelar a rota.')
     else {
-      if (activeRouteId === routeId) stopBroadcast()
+      if (activeRouteId === route.id) stopBroadcast()
       onSuccess?.('Rota cancelada.')
       load()
     }
@@ -43,7 +63,7 @@ export default function DriverDashboard({ user, onError, onSuccess }) {
     const { error } = await startRoute(routeId, user.id)
     if (error) onError?.('Não foi possível iniciar a rota.')
     else {
-      onSuccess?.('Rota iniciada! Já está visível para passageiros próximos. 🚗')
+      onSuccess?.('Rota iniciada e disponível para reservas.')
       startBroadcast(routeId, user.id)
       load()
     }
@@ -53,173 +73,249 @@ export default function DriverDashboard({ user, onError, onSuccess }) {
   function toggleBroadcast(routeId) {
     if (activeRouteId === routeId) {
       stopBroadcast()
-      onSuccess?.('Localização parou de ser compartilhada.')
+      onSuccess?.('Compartilhamento de localização encerrado.')
     } else {
       startBroadcast(routeId, user.id)
-      onSuccess?.('Compartilhando sua localização em tempo real. 📡')
+      onSuccess?.('Localização em tempo real ativada.')
     }
   }
 
-  const activeRoutes = routes.filter(r => r.status !== 'cancelled')
-  const totalPassengers = routes.reduce((acc, r) => acc + (r.bookings?.filter(b => b.status !== 'cancelled').length ?? 0), 0)
-  const totalEarnings = routes.reduce((acc, r) => {
-    const confirmed = r.bookings?.filter(b => b.status !== 'cancelled').length ?? 0
-    return acc + confirmed * getPrice(r.origin_region, r.destination_region)
-  }, 0)
+  const metrics = useMemo(() => {
+    const active = routes.filter(route => ['open', 'full'].includes(route.status))
+    const scheduled = routes.filter(route => route.status === 'scheduled')
+    const confirmed = routes.flatMap(route => route.bookings ?? []).filter(booking => booking.status !== 'cancelled')
+    const seats = routes.reduce((sum, route) => sum + Number(route.total_seats || 0), 0)
+    const occupied = routes.reduce((sum, route) => sum + Math.max(0, Number(route.total_seats || 0) - Number(route.available_seats || 0)), 0)
+    const revenue = routes.reduce((sum, route) => {
+      const passengers = (route.bookings ?? []).filter(booking => booking.status !== 'cancelled').length
+      return sum + passengers * getPrice(route.origin_region, route.destination_region)
+    }, 0)
+    return {
+      active: active.length,
+      scheduled: scheduled.length,
+      passengers: confirmed.length,
+      occupancy: seats ? Math.round((occupied / seats) * 100) : 0,
+      revenue,
+    }
+  }, [routes])
+
+  const departureQueue = routes
+    .filter(route => route.status === 'scheduled')
+    .sort((a, b) => new Date(a.departure_time) - new Date(b.departure_time))
+
+  const visibleRoutes = routes.filter(route => {
+    if (filter === 'all') return true
+    if (filter === 'active') return ['open', 'full'].includes(route.status)
+    return route.status === filter
+  })
+
+  const mappedRoutes = routes.filter(route => route.status !== 'cancelled').slice(0, 20)
 
   return (
-    <div className="page-container">
-      <div className="section-heading">
+    <main className="page-container driver-console">
+      <div className="driver-console__header">
         <div>
-          <h2>Painel do motorista</h2>
-          <p style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>Gerencie suas rotas e passageiros</p>
+          <p className="eyebrow">Central operacional</p>
+          <h1>Olá, {firstName(user.name)}</h1>
+          <p>Organize partidas, acompanhe ocupação e fale com os passageiros.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowCreate(true)}>+ Nova rota</button>
+        <button className="btn btn-primary" onClick={() => setShowCreate(true)}>Nova rota</button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(9rem, 1fr))', gap: '0.875rem', marginBottom: '2rem' }}>
-        <div className="stat-tile">
-          <div className="stat-tile__value">{activeRoutes.length}</div>
-          <div className="stat-tile__label">Rotas ativas</div>
+      <section className="driver-overview" aria-label="Resumo da operação">
+        <div className="driver-kpis">
+          <Metric label="Rotas ativas" value={metrics.active} tone="teal" />
+          <Metric label="Próximas saídas" value={metrics.scheduled} />
+          <Metric label="Passageiros" value={metrics.passengers} />
+          <Metric label="Ocupação" value={`${metrics.occupancy}%`} tone="amber" />
+          <Metric label="Receita estimada" value={formatPrice(metrics.revenue)} wide />
         </div>
-        <div className="stat-tile">
-          <div className="stat-tile__value">{totalPassengers}</div>
-          <div className="stat-tile__label">Passageiros</div>
+        <div className="driver-map-panel">
+          <div className="driver-map-panel__header">
+            <div>
+              <p className="eyebrow">Cobertura</p>
+              <h3>Suas rotas no mapa</h3>
+            </div>
+            <span className="live-chip"><span /> {mappedRoutes.length} planejadas</span>
+          </div>
+          <RouteMap routes={mappedRoutes} showHeader={false} />
         </div>
-        <div className="stat-tile">
-          <div className="stat-tile__value">{formatPrice(totalEarnings)}</div>
-          <div className="stat-tile__label">Total estimado</div>
+      </section>
+
+      <section className="departure-board">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Fila de saída</p>
+            <h2>Rotas prontas para iniciar</h2>
+          </div>
+          <span className="tag">{departureQueue.length} agendadas</span>
         </div>
-      </div>
 
-      {loading && <SkeletonList />}
+        {!loading && departureQueue.length === 0 && (
+          <div className="compact-empty">Nenhuma partida aguardando início.</div>
+        )}
 
-      {!loading && routes.length === 0 && (
-        <div className="empty-state">
-          <h3 style={{ marginBottom: '0.5rem' }}>Nenhuma rota criada ainda</h3>
-          <p style={{ marginBottom: '1.25rem' }}>Publique sua primeira rota e comece a levar passageiros.</p>
-          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>Criar rota</button>
+        <div className="departure-list">
+          {departureQueue.slice(0, 4).map((route, index) => (
+            <article className="departure-item" key={route.id}>
+              <span className="departure-item__order">{String(index + 1).padStart(2, '0')}</span>
+              <div className="departure-item__time">
+                <strong>{timeOnly(route.departure_time)}</strong>
+                <small>{dateOnly(route.departure_time)}</small>
+              </div>
+              <div className="departure-item__route">
+                <strong>{getRegionName(route.origin_region)} → {getRegionName(route.destination_region)}</strong>
+                <small>{route.origin_address || 'Origem a confirmar'} → {route.destination_address || 'Destino a confirmar'}</small>
+              </div>
+              <div className="departure-item__capacity">
+                <span>{route.available_seats}/{route.total_seats} vagas</span>
+                <OccupancyBar route={route} />
+              </div>
+              <button className="btn btn-primary" onClick={() => handleStart(route.id)} disabled={starting === route.id}>
+                {starting === route.id ? 'Iniciando…' : 'Iniciar rota'}
+              </button>
+            </article>
+          ))}
         </div>
-      )}
+      </section>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {routes.map(route => {
-          const activeBookings = route.bookings?.filter(b => b.status !== 'cancelled') ?? []
-          const stops = orderStops(
-            { lat: route.origin_lat, lng: route.origin_lng },
-            { lat: route.destination_lat, lng: route.destination_lng },
-            activeBookings
-          )
-          const isBroadcasting = activeRouteId === route.id
+      <section className="route-management">
+        <div className="route-management__toolbar">
+          <div>
+            <p className="eyebrow">Gestão</p>
+            <h2>Todas as rotas</h2>
+          </div>
+          <div className="segmented-control" aria-label="Filtrar rotas">
+            {FILTERS.map(item => (
+              <button key={item.id} className={filter === item.id ? 'is-active' : ''} onClick={() => setFilter(item.id)}>
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-          return (
-            <div className="route-card" key={route.id}>
-              <div className="route-card__top" />
-              <div className="route-card__body">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <div className="route-card__path">
-                    <span className="dot dot--origin" />
-                    <span>{getRegionName(route.origin_region)}</span>
-                    <span className="arrow">→</span>
-                    <span className="dot dot--dest" />
-                    <span>{getRegionName(route.destination_region)}</span>
+        {loading && <SkeletonList />}
+        {!loading && routes.length === 0 && (
+          <div className="empty-state">
+            <h3>Nenhuma rota criada</h3>
+            <p style={{ margin: '0.5rem 0 1.25rem' }}>Cadastre o primeiro trajeto para começar sua operação.</p>
+            <button className="btn btn-primary" onClick={() => setShowCreate(true)}>Criar rota</button>
+          </div>
+        )}
+        {!loading && routes.length > 0 && visibleRoutes.length === 0 && (
+          <div className="compact-empty">Nenhuma rota neste filtro.</div>
+        )}
+
+        <div className="admin-route-list">
+          {visibleRoutes.map(route => {
+            const activeBookings = (route.bookings ?? []).filter(booking => booking.status !== 'cancelled')
+            const waitlist = (route.route_waitlist ?? []).filter(entry => entry.status === 'waiting')
+            const isExpanded = expandedRoute === route.id
+            const isBroadcasting = activeRouteId === route.id
+            const routeRevenue = activeBookings.length * getPrice(route.origin_region, route.destination_region)
+            const stops = orderStops(
+              { lat: route.origin_lat, lng: route.origin_lng },
+              { lat: route.destination_lat, lng: route.destination_lng },
+              activeBookings
+            )
+
+            return (
+              <article className="admin-route" key={route.id}>
+                <button className="admin-route__summary" onClick={() => setExpandedRoute(isExpanded ? null : route.id)} aria-expanded={isExpanded}>
+                  <div className="admin-route__date">
+                    <strong>{timeOnly(route.departure_time)}</strong>
+                    <span>{dateOnly(route.departure_time)}</span>
+                  </div>
+                  <div className="admin-route__path">
+                    <strong>{getRegionName(route.origin_region)} → {getRegionName(route.destination_region)}</strong>
+                    <span>{route.vehicle_model || user.vehicle_model || 'Veículo não informado'}{route.vehicle_plate ? ` · ${route.vehicle_plate}` : ''}</span>
+                  </div>
+                  <div className="admin-route__occupancy">
+                    <span>{activeBookings.length} passageiros · {waitlist.length} na fila</span>
+                    <OccupancyBar route={route} />
+                  </div>
+                  <div className="admin-route__revenue">
+                    <strong>{formatPrice(routeRevenue)}</strong>
+                    <span>estimado</span>
                   </div>
                   <StatusPill status={route.status} />
-                </div>
-                <div className="route-card__meta">
-                  <span>🕒 {formatDateTime(route.departure_time)}</span>
-                  <span>💺 {route.available_seats}/{route.total_seats} livres</span>
-                  {route.vehicle_plate && <span>🚙 {route.vehicle_plate}</span>}
-                  {isBroadcasting && <span className="tag" style={{ color: 'var(--teal-400)' }}>📡 Transmitindo localização</span>}
-                </div>
+                  <span className="admin-route__chevron" aria-hidden="true">{isExpanded ? '−' : '+'}</span>
+                </button>
 
-                {route.status === 'scheduled' && (
-                  <p style={{ marginTop: '0.625rem', fontSize: '0.8125rem' }}>
-                    ⏸ Ainda não visível para passageiros — clique em "Iniciar rota" quando sair.
-                  </p>
-                )}
-
-                {(route.status === 'open' || route.status === 'full') && stops.length > 0 && (
-                  <div style={{ marginTop: '1rem' }}>
-                    <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.625rem' }}>
-                      Itinerário — paradas em ordem
-                    </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      <div className="route-line" style={{ display: 'none' }} />
-                      {stops.map((b, i) => (
-                        <div key={b.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem' }}>
-                          <span className="stepper__badge" style={{ width: '1.75rem', height: '1.75rem', fontSize: '0.75rem', flexShrink: 0 }}>{i + 1}</span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
-                              <div>
-                                <p style={{ color: 'var(--cream-100)', fontSize: '0.875rem', fontWeight: 600 }}>
-                                  {b.is_for_someone_else ? `${b.recipient_name} (via ${b.passenger?.name})` : b.passenger?.name}
-                                </p>
-                                <p style={{ fontSize: '0.75rem' }}>Assento #{b.seat_number}{b.pickup_address ? ` · ${b.pickup_address}` : ''}</p>
-                              </div>
-                              <div style={{ display: 'flex', gap: '0.375rem' }}>
-                                <a
-                                  className="btn btn-secondary btn-icon"
-                                  href={whatsAppLink(b.is_for_someone_else ? b.recipient_phone : b.passenger?.phone, `Oi! Sou o motorista da carona Papaleguas, chegando em breve.`) ?? '#'}
-                                  target="_blank" rel="noreferrer"
-                                  onClick={(e) => { if (!whatsAppLink(b.is_for_someone_else ? b.recipient_phone : b.passenger?.phone)) e.preventDefault() }}
-                                  aria-label="WhatsApp"
-                                  title="Chamar no WhatsApp"
-                                >
-                                  💬
-                                </a>
-                                <button className="btn btn-ghost btn-icon" onClick={() => setActiveChat({ ...b, route })} aria-label="Abrir chat no app">✉</button>
-                              </div>
-                            </div>
+                {isExpanded && (
+                  <div className="admin-route__details">
+                    <div className="manifest">
+                      <div className="manifest__header">
+                        <h3>Manifesto de passageiros</h3>
+                        <span className="tag">{activeBookings.length}/{route.total_seats} ocupados</span>
+                      </div>
+                      {stops.length === 0 && <div className="compact-empty">Nenhuma reserva confirmada.</div>}
+                      {stops.map((booking, index) => (
+                        <div className="passenger-row" key={booking.id}>
+                          <span className="passenger-row__stop">{index + 1}</span>
+                          <span className="avatar">
+                            {booking.passenger?.avatar_url
+                              ? <img src={booking.passenger.avatar_url} alt="" />
+                              : initials(booking.passenger?.name)}
+                          </span>
+                          <div className="passenger-row__identity">
+                            <strong>{booking.is_for_someone_else ? booking.recipient_name : booking.passenger?.name}</strong>
+                            <span>Assento {booking.seat_number}{booking.pickup_address ? ` · ${booking.pickup_address}` : ''}</span>
+                          </div>
+                          <div className="passenger-row__actions">
+                            {whatsAppLink(booking.is_for_someone_else ? booking.recipient_phone : booking.passenger?.phone) && (
+                              <a className="btn btn-secondary" href={whatsAppLink(booking.is_for_someone_else ? booking.recipient_phone : booking.passenger?.phone, 'Olá! Sou o motorista da sua rota Papaleguas.')} target="_blank" rel="noreferrer">WhatsApp</a>
+                            )}
+                            <button className="btn btn-ghost" onClick={() => setActiveChat({ ...booking, route })}>Mensagem</button>
                           </div>
                         </div>
                       ))}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-                        <span className="stepper__badge" style={{ width: '1.75rem', height: '1.75rem', fontSize: '0.9375rem', flexShrink: 0, borderColor: 'var(--coral-500)', color: 'var(--coral-400)' }}>🏁</span>
-                        <p style={{ fontSize: '0.8125rem', color: 'var(--cream-100)', fontWeight: 600 }}>Destino final — {getRegionName(route.destination_region)}</p>
-                      </div>
                     </div>
+
+                    <aside className="route-side-panel">
+                      <div>
+                        <p className="eyebrow">Lista de espera</p>
+                        <strong>{waitlist.length} pessoas aguardando</strong>
+                        <p>Cancelamentos são preenchidos automaticamente na ordem de entrada.</p>
+                      </div>
+                      {waitlist.slice(0, 4).map((entry, index) => (
+                        <div className="waitlist-person" key={entry.id}>
+                          <span>{index + 1}</span>
+                          <div>
+                            <strong>{entry.passenger?.name}</strong>
+                            <small>{entry.passenger?.phone || 'Sem telefone'}</small>
+                          </div>
+                        </div>
+                      ))}
+                    </aside>
                   </div>
                 )}
-              </div>
-              <div className="route-card__footer">
-                <span className="price-badge">{formatPrice(getPrice(route.origin_region, route.destination_region))}</span>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+
+                <div className="admin-route__actions">
                   {route.status === 'scheduled' && (
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => handleStart(route.id)}
-                      disabled={starting === route.id}
-                    >
-                      {starting === route.id ? 'Iniciando…' : '▶ Iniciar rota'}
+                    <button className="btn btn-primary" onClick={() => handleStart(route.id)} disabled={starting === route.id}>
+                      {starting === route.id ? 'Iniciando…' : 'Iniciar rota'}
                     </button>
                   )}
-                  {(route.status === 'open' || route.status === 'full') && (
-                    <button
-                      className={isBroadcasting ? 'btn btn-secondary' : 'btn btn-primary'}
-                      onClick={() => toggleBroadcast(route.id)}
-                    >
-                      {isBroadcasting ? '⏹ Parar transmissão' : '📡 Transmitir localização'}
+                  {['open', 'full'].includes(route.status) && (
+                    <button className={isBroadcasting ? 'btn btn-secondary' : 'btn btn-primary'} onClick={() => toggleBroadcast(route.id)}>
+                      {isBroadcasting ? 'Parar localização' : 'Transmitir localização'}
                     </button>
                   )}
                   {route.status !== 'cancelled' && (
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => handleCancel(route.id)}
-                      disabled={cancelling === route.id}
-                    >
+                    <button className="btn btn-danger" onClick={() => handleCancel(route)} disabled={cancelling === route.id}>
                       {cancelling === route.id ? 'Cancelando…' : 'Cancelar rota'}
                     </button>
                   )}
                 </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
+              </article>
+            )
+          })}
+        </div>
+      </section>
 
       {showCreate && (
-        <Modal title="Nova rota" onClose={() => setShowCreate(false)}>
+        <Modal title="Planejar nova rota" onClose={() => setShowCreate(false)}>
           <CreateRoute
             user={user}
             onCreated={() => { setShowCreate(false); load() }}
@@ -230,12 +326,28 @@ export default function DriverDashboard({ user, onError, onSuccess }) {
       )}
 
       {activeChat && (
-        <Modal title="Chat" onClose={() => setActiveChat(null)}>
+        <Modal title="Conversa com passageiro" onClose={() => setActiveChat(null)}>
           <Chat booking={activeChat} user={user} onClose={() => setActiveChat(null)} />
         </Modal>
       )}
+    </main>
+  )
+}
+
+function Metric({ label, value, tone = '', wide = false }) {
+  return (
+    <div className={`driver-kpi ${tone ? `driver-kpi--${tone}` : ''} ${wide ? 'driver-kpi--wide' : ''}`}>
+      <strong>{value}</strong>
+      <span>{label}</span>
     </div>
   )
+}
+
+function OccupancyBar({ route }) {
+  const total = Number(route.total_seats || 0)
+  const occupied = Math.max(0, total - Number(route.available_seats || 0))
+  const percent = total ? Math.round((occupied / total) * 100) : 0
+  return <span className="occupancy-bar"><i style={{ width: `${percent}%` }} /></span>
 }
 
 function StatusPill({ status }) {
@@ -245,14 +357,28 @@ function StatusPill({ status }) {
     full: { label: 'Lotada', cls: 'status-pill--pending' },
     cancelled: { label: 'Cancelada', cls: 'status-pill--cancelled' },
   }
-  const s = map[status] ?? map.open
-  return <span className={`status-pill ${s.cls}`}>{s.label}</span>
+  const item = map[status] ?? map.open
+  return <span className={`status-pill ${item.cls}`}>{item.label}</span>
 }
 
 function SkeletonList() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      {[1, 2].map(i => <div key={i} className="skeleton" style={{ height: '9rem', borderRadius: 'var(--radius-lg)' }} />)}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      {[1, 2, 3].map(item => <div key={item} className="skeleton" style={{ height: '6rem', borderRadius: 'var(--radius-md)' }} />)}
     </div>
   )
+}
+
+function firstName(name = '') {
+  return name.trim().split(/\s+/)[0] || 'motorista'
+}
+
+function timeOnly(value) {
+  if (!value) return '--:--'
+  return new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(value))
+}
+
+function dateOnly(value) {
+  if (!value) return '--/--'
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(value)).replace('.', '')
 }

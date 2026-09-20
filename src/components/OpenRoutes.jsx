@@ -4,12 +4,14 @@ import RouteCard from './RouteCard'
 import Modal from './Modal'
 import SeatPicker from './SeatPicker'
 import RouteMap from './RouteMap'
+import WaitlistPanel from './WaitlistPanel'
 
 export default function OpenRoutes({ user, onError, onSuccess }) {
   const [routes, setRoutes] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ originRegion: '', destinationRegion: '' })
   const [selectedRoute, setSelectedRoute] = useState(null)
+  const [waitlistRoute, setWaitlistRoute] = useState(null)
   const [myLocation, setMyLocation] = useState(null)
   const [locating, setLocating] = useState(false)
   const [sortByDistance, setSortByDistance] = useState(false)
@@ -108,7 +110,13 @@ export default function OpenRoutes({ user, onError, onSuccess }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(18rem, 1fr))', gap: '1rem' }}>
         {visibleRoutes.map(route => (
-          <RouteCard key={route.id} route={route} onReserve={setSelectedRoute} distanceKm={route._distance} />
+          <RouteCard
+            key={route.id}
+            route={route}
+            onReserve={setSelectedRoute}
+            onWaitlist={setWaitlistRoute}
+            distanceKm={route._distance}
+          />
         ))}
       </div>
 
@@ -118,6 +126,18 @@ export default function OpenRoutes({ user, onError, onSuccess }) {
             route={selectedRoute}
             user={user}
             onDone={() => { setSelectedRoute(null); load() }}
+            onError={onError}
+            onSuccess={onSuccess}
+          />
+        </Modal>
+      )}
+
+      {waitlistRoute && (
+        <Modal title="Lista de espera" onClose={() => setWaitlistRoute(null)}>
+          <WaitlistPanel
+            route={waitlistRoute}
+            user={user}
+            onDone={() => { setWaitlistRoute(null); load() }}
             onError={onError}
             onSuccess={onSuccess}
           />

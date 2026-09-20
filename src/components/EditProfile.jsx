@@ -7,6 +7,9 @@ export default function EditProfile({ user, onClose, onUpdated, onError, onSucce
   const [phone, setPhone] = useState(user.phone ?? '')
   const [address, setAddress] = useState(user.address ?? '')
   const [avatarUrl, setAvatarUrl] = useState(user.avatar_url ?? '')
+  const [vehicleModel, setVehicleModel] = useState(user.vehicle_model ?? '')
+  const [vehiclePlate, setVehiclePlate] = useState(user.vehicle_plate ?? '')
+  const [vehicleColor, setVehicleColor] = useState(user.vehicle_color ?? '')
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -22,7 +25,14 @@ export default function EditProfile({ user, onClose, onUpdated, onError, onSucce
 
   async function handleSave() {
     setSaving(true)
-    const { error } = await updateProfile(user.id, { name, phone, address })
+    const { error } = await updateProfile(user.id, {
+      name,
+      phone,
+      address,
+      vehicleModel,
+      vehiclePlate,
+      vehicleColor,
+    })
     setSaving(false)
     if (error) {
       onError?.('Não foi possível salvar seu perfil.')
@@ -34,8 +44,8 @@ export default function EditProfile({ user, onClose, onUpdated, onError, onSucce
   }
 
   return (
-    <div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1.5rem' }}>
+    <div className="profile-editor">
+      <div className="profile-editor__photo">
         <div className="avatar" style={{ width: '5rem', height: '5rem', fontSize: '1.5rem', marginBottom: '0.75rem' }}>
           {avatarUrl
             ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -53,6 +63,12 @@ export default function EditProfile({ user, onClose, onUpdated, onError, onSucce
       </div>
 
       <div style={{ marginBottom: '1rem' }}>
+        <label className="field-label" htmlFor="editEmail">E-mail da conta</label>
+        <input id="editEmail" className="input" type="email" value={user.email ?? ''} readOnly />
+        <p style={{ fontSize: '0.75rem', marginTop: '0.375rem' }}>O e-mail de acesso é protegido pela sua conta.</p>
+      </div>
+
+      <div style={{ marginBottom: '1rem' }}>
         <label className="field-label" htmlFor="editPhone">WhatsApp / Telefone</label>
         <input id="editPhone" className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(45) 99999-9999" />
       </div>
@@ -61,6 +77,31 @@ export default function EditProfile({ user, onClose, onUpdated, onError, onSucce
         <label className="field-label" htmlFor="editAddress">Endereço</label>
         <input id="editAddress" className="input" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Rua, número, bairro" />
       </div>
+
+      {user.role === 'driver' && (
+        <div className="vehicle-fields">
+          <div className="section-heading" style={{ marginBottom: '0.875rem' }}>
+            <div>
+              <h3>Veículo principal</h3>
+              <p style={{ fontSize: '0.8125rem', marginTop: '0.2rem' }}>Esses dados preenchem suas novas rotas.</p>
+            </div>
+          </div>
+          <div className="form-grid form-grid--three">
+            <div>
+              <label className="field-label" htmlFor="vehicleModel">Modelo</label>
+              <input id="vehicleModel" className="input" value={vehicleModel} onChange={(e) => setVehicleModel(e.target.value)} placeholder="Ex: Chevrolet Onix" />
+            </div>
+            <div>
+              <label className="field-label" htmlFor="vehicleColor">Cor</label>
+              <input id="vehicleColor" className="input" value={vehicleColor} onChange={(e) => setVehicleColor(e.target.value)} placeholder="Ex: Prata" />
+            </div>
+            <div>
+              <label className="field-label" htmlFor="vehiclePlate">Placa</label>
+              <input id="vehiclePlate" className="input" value={vehiclePlate} onChange={(e) => setVehiclePlate(e.target.value.toUpperCase())} placeholder="ABC1D23" maxLength={8} />
+            </div>
+          </div>
+        </div>
+      )}
 
       <button className="btn btn-primary btn-block" onClick={handleSave} disabled={saving || uploading}>
         {saving ? 'Salvando…' : 'Salvar perfil'}

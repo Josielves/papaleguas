@@ -30,7 +30,7 @@ function FitMap({ points }) {
   return null
 }
 
-export default function RouteMap({ routes = [], myLocation }) {
+export default function RouteMap({ routes = [], myLocation, showHeader = true }) {
   const mapRoutes = useMemo(
     () => routes
       .map((route) => ({
@@ -55,14 +55,16 @@ export default function RouteMap({ routes = [], myLocation }) {
   ]
 
   return (
-    <section className="route-map-shell" aria-label="Mapa de rotas abertas">
-      <div className="route-map-shell__header">
-        <div>
-          <p className="eyebrow">Mapa vivo</p>
-          <h3>Rotas se movendo pela cidade</h3>
+    <section className={`route-map-shell ${showHeader ? '' : 'route-map-shell--compact'}`} aria-label="Mapa de rotas abertas">
+      {showHeader && (
+        <div className="route-map-shell__header">
+          <div>
+            <p className="eyebrow">Mapa vivo</p>
+            <h3>Rotas se movendo pela cidade</h3>
+          </div>
+          <span className="live-chip"><span /> {routes.length} abertas</span>
         </div>
-        <span className="live-chip"><span /> {routes.length} abertas</span>
-      </div>
+      )}
       <MapContainer
         center={REGION_POINTS.centro}
         zoom={12}

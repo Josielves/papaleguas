@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react'
-import { getMyBookings, cancelBooking, getRegionName, whatsAppLink, getPrice } from '../lib/supabase'
+import {
+  getMyBookings,
+  getMyWaitlist,
+  cancelBooking,
+  leaveRouteWaitlist,
+  getRegionName,
+  whatsAppLink,
+  getPrice,
+} from '../lib/supabase'
 import { formatDateTime, formatPrice, initials } from '../lib/format'
 import Modal from './Modal'
 import Chat from './Chat'
@@ -7,6 +15,7 @@ import LiveTrackingMap from './LiveTrackingMap'
 
 export default function MyBookings({ user, onError, onSuccess }) {
   const [bookings, setBookings] = useState([])
+  const [waitlist, setWaitlist] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeChat, setActiveChat] = useState(null)
   const [tracking, setTracking] = useState(null)
@@ -14,9 +23,13 @@ export default function MyBookings({ user, onError, onSuccess }) {
 
   async function load() {
     setLoading(true)
-    const { data, error } = await getMyBookings(user.id)
-    if (error) onError?.('Não foi possível carregar suas reservas.')
-    setBookings(data ?? [])
+    const [bookingResult, waitlistResult] = await Promise.all([
+      getMyBookings(user.id),
+      getMyWaitlist(user.id),
+    ])
+    if (bookingResult.error || waitlistResult.error) onError?.('Não foi possível carregar suas reservas.')
+    setBookings(bookingResult.data ?? [])
+    setWaitlist(waitlistResult.data ?? [])
     setLoading(false)
   }
 
@@ -28,6 +41,17 @@ export default function MyBookings({ user, onError, onSuccess }) {
     if (error) onError?.('Não foi possível cancelar a reserva.')
     else {
       onSuccess?.('Reserva cancelada.')
+      load()
+    }
+    setCancelling(null)
+  }
+
+  async function handleLeaveWaitlist(entry) {
+    setCancelling(entry.id)
+    const { error } = await leaveRouteWaitlist(entry.id, user.id)
+    if (error) onError?.('Não foi possível sair da lista de espera.')
+    else {
+      onSuccess?.('Você saiu da lista de espera.')
       load()
     }
     setCancelling(null)
@@ -48,11 +72,38 @@ export default function MyBookings({ user, onError, onSuccess }) {
         </div>
       )}
 
-      {!loading && bookings.length === 0 && (
+      {!loading && bookings.length === 0 && waitlist.length === 0 && (
         <div className="empty-state">
           <h3 style={{ marginBottom: '0.5rem' }}>Você ainda não tem reservas</h3>
           <p>Explore as rotas abertas e reserve seu assento.</p>
         </div>
+      )}
+
+      {!loading && waitlist.length > 0 && (
+        <section className="waitlist-section">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Reposição automática</p>
+              <h3>Listas de espera</h3>
+            </div>
+            <span className="tag">{waitlist.length} aguardando</span>
+          </div>
+          <div className="waitlist-grid">
+            {waitlist.map((entry, index) => (
+              <article className="waitlist-card" key={entry.id}>
+                <span className="waitlist-position">#{index + 1}</span>
+                <div>
+                  <strong>{getRegionName(entry.route?.origin_region)} → {getRegionName(entry.route?.destination_region)}</strong>
+                  <p>{formatDateTime(entry.route?.departure_time)}</p>
+                  <small>Quando uma vaga abrir, sua reserva será confirmada automaticamente.</small>
+                </div>
+                <button className="btn btn-ghost" onClick={() => handleLeaveWaitlist(entry)} disabled={cancelling === entry.id}>
+                  {cancelling === entry.id ? 'Saindo…' : 'Sair da fila'}
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

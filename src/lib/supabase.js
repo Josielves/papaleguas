@@ -59,7 +59,7 @@ export async function getOpenRoutes(filters = {}) {
       driver:profiles!routes_driver_id_fkey(id, name, phone, avatar_url),
       seats(*)
     `)
-    .eq('status', 'open')
+    .in('status', ['open', 'full'])
     .gte('departure_time', new Date().toISOString())
     .order('departure_time', { ascending: true })
     .limit(100)
@@ -78,6 +78,10 @@ export function getDriverRoutes(driverId) {
       bookings(
         *,
         passenger:profiles!bookings_passenger_id_fkey(id, name, phone, avatar_url)
+      ),
+      route_waitlist(
+        id, status, created_at,
+        passenger:profiles!route_waitlist_passenger_id_fkey(id, name, phone, avatar_url)
       )
     `)
     .eq('driver_id', driverId)
@@ -98,6 +102,22 @@ export function getMyBookings(passengerId) {
     .eq('passenger_id', passengerId)
     .order('created_at', { ascending: false })
     .limit(200)
+}
+
+export function getMyWaitlist(passengerId) {
+  return supabase
+    .from('route_waitlist')
+    .select(`
+      *,
+      route:routes(
+        *,
+        driver:profiles!routes_driver_id_fkey(id, name, phone, avatar_url)
+      )
+    `)
+    .eq('passenger_id', passengerId)
+    .eq('status', 'waiting')
+    .order('created_at', { ascending: true })
+    .limit(100)
 }
 
 export function createRoute(route) {
@@ -126,11 +146,11 @@ export function startRoute(routeId, driverId) {
   })
 }
 
-export function cancelRoute(routeId) {
-  return supabase
-    .from('routes')
-    .update({ status: 'cancelled' })
-    .eq('id', routeId)
+export function cancelRoute(routeId, driverId) {
+  return supabase.rpc('cancel_route', {
+    p_route_id: routeId,
+    p_driver_id: driverId,
+  })
 }
 
 export function reserveSeat({ routeId, seatNumber, passengerId, pickupAddress, pickupLat, pickupLng }) {
@@ -160,6 +180,88 @@ export function cancelBooking(bookingId, _seatId, _routeId, passengerId) {
     p_booking_id: bookingId,
     p_passenger_id: passengerId,
   })
+}
+
+export function joinRouteWaitlist({ routeId, passengerId, pickupAddress, pickupLat, pickupLng }) {
+  return supabase.rpc('join_route_waitlist', {
+    p_route_id: routeId,
+    p_passenger_id: passengerId,
+    p_pickup_address: pickupAddress || null,
+    p_pickup_lat: pickupLat ?? null,
+    p_pickup_lng: pickupLng ?? null,
+  })
+}
+
+export function leaveRouteWaitlist(waitlistId, passengerId) {
+  return supabase.rpc('leave_route_waitlist', {
+    p_waitlist_id: waitlistId,
+    p_passenger_id: passengerId,
+  })
+}
+
+export function updateProfile(userId, profile) {
+  return supabase
+    .from('profiles')
+    .update({
+      name: profile.name,
+      phone: profile.phone || null,
+      address: profile.address || null,
+      vehicle_model: profile.vehicleModel || null,
+      vehicle_plate: profile.vehiclePlate?.toUpperCase() || null,
+      vehicle_color: profile.vehicleColor || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId)
+    .select()
+    .single()
+}
+
+export async function uploadAvatar(userId, file) {
+  const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+  const path = `${userId}/avatar-${Date.now()}.${extension}`
+  const upload = await supabase.storage
+    .from('avatars')
+    .upload(path, file, { cacheControl: '3600', upsert: false })
+
+  if (upload.error) return upload
+
+  const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(path)
+  const avatarUrl = publicData.publicUrl
+  const update = await supabase
+    .from('profiles')
+    .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+
+  if (update.error) return { data: null, error: update.error }
+  return { data: { avatar_url: avatarUrl }, error: null }
+}
+
+export function getNotifications(userId) {
+  return supabase
+    .from('notifications')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(20)
+}
+
+export function markNotificationRead(notificationId, userId) {
+  return supabase
+    .from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('id', notificationId)
+    .eq('user_id', userId)
+}
+
+export function subscribeToNotifications(userId, onChange) {
+  return supabase
+    .channel(`notifications-${userId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+      onChange
+    )
+    .subscribe()
 }
 
 export function updateDriverLocation(routeId, driverId, lat, lng) {

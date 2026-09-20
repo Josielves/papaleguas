@@ -1,7 +1,7 @@
 import { getPrice, getRegionName } from '../lib/supabase'
 import { formatDateTime, formatPrice, initials } from '../lib/format'
 
-export default function RouteCard({ route, onReserve, isOwn = false, footerExtra, distanceKm }) {
+export default function RouteCard({ route, onReserve, onWaitlist, isOwn = false, footerExtra, distanceKm }) {
   const availableSeats = route.seats?.filter(s => s.status === 'available').length ?? route.available_seats
   const totalSeats = route.total_seats ?? route.seats?.length ?? 0
   const price = getPrice(route.origin_region, route.destination_region)
@@ -18,6 +18,8 @@ export default function RouteCard({ route, onReserve, isOwn = false, footerExtra
           <span className="dot dot--dest" />
           <span>{getRegionName(route.destination_region)}</span>
         </div>
+
+        {full && <span className="status-pill status-pill--pending" style={{ marginTop: '0.75rem' }}>Lotada · fila disponível</span>}
 
         <div className="route-card__meta">
           <span>🕒 {formatDateTime(route.departure_time)}</span>
@@ -52,11 +54,10 @@ export default function RouteCard({ route, onReserve, isOwn = false, footerExtra
         {footerExtra ? footerExtra : (
           onReserve && (
             <button
-              className="btn btn-primary"
-              disabled={full}
-              onClick={() => onReserve(route)}
+              className={full ? 'btn btn-secondary' : 'btn btn-primary'}
+              onClick={() => full ? onWaitlist?.(route) : onReserve(route)}
             >
-              {full ? 'Lotada' : 'Reservar assento'}
+              {full ? 'Entrar na fila' : 'Escolher assento'}
             </button>
           )
         )}
