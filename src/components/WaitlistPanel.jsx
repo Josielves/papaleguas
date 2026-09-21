@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ArrowRight, LocateFixed } from 'lucide-react'
 import { getCurrentPosition, joinRouteWaitlist, reverseGeocode } from '../lib/supabase'
 import { formatDateTime } from '../lib/format'
 
@@ -48,7 +49,7 @@ export default function WaitlistPanel({ route, user, onDone, onError, onSuccess 
       </div>
       <div className="route-summary-line">
         <span>{route.origin_address || route.origin_region}</span>
-        <span>→</span>
+        <ArrowRight size={16} aria-hidden="true" />
         <span>{route.destination_address || route.destination_region}</span>
       </div>
       <p style={{ fontSize: '0.8125rem', margin: '0.5rem 0 1.25rem' }}>{formatDateTime(route.departure_time)}</p>
@@ -62,7 +63,7 @@ export default function WaitlistPanel({ route, user, onDone, onError, onSuccess 
           placeholder="Rua, número, bairro"
         />
         <button type="button" className="btn btn-secondary btn-icon" onClick={useMyLocation} disabled={locating} title="Usar minha localização">
-          {locating ? '…' : '⌖'}
+          {locating ? '…' : <LocateFixed size={18} aria-hidden="true" />}
         </button>
       </div>
       <button type="button" className="btn btn-primary btn-block" style={{ marginTop: '1.25rem' }} onClick={join} disabled={joining}>

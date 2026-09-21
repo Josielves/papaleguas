@@ -92,9 +92,21 @@ npm install
 supabase/schema.sql
 supabase/migration_scale_and_security.sql
 supabase/migration_operations_and_waitlist.sql
+supabase/migration_scalable_backend.sql
 ```
 
 Se o schema principal já estiver instalado, execute somente as migrações que ainda não foram aplicadas.
+
+A ultima migracao separa a localizacao em uma tabela propria, protege dados de perfil e cria o cache de geocodificacao. Depois dela, publique a Edge Function:
+
+```bash
+npx supabase login
+npx supabase link --project-ref SEU_PROJECT_REF
+npx supabase functions deploy geocode
+npx supabase secrets set GEOCODING_USER_AGENT="Papaleguas/2.0 (contato@seu-dominio.com)"
+```
+
+O plano de capacidade, configuracao de mapas e teste de carga estao em `docs/SCALING_ARCHITECTURE.md`.
 
 3. Copie as variáveis de ambiente:
 
@@ -166,3 +178,32 @@ src/
 4. Build command: `npm run build`
 5. Output: `dist`
 6. Adicione as variáveis de ambiente no painel da Vercel
+
+---
+
+## APK Android
+
+O projeto Android usa Capacitor e fica em `android/`. O identificador do aplicativo é `com.papaleguas.app`.
+
+Para sincronizar o frontend e gerar um APK de teste:
+
+```bash
+npm run android:assets
+npm run android:apk
+```
+
+O build requer um JDK entre as versoes 17 e 24; o JDK 21 e recomendado. O script procura automaticamente uma instalacao compativel em `JAVA_HOME`, na pasta `.jdks` do usuario e no Android Studio.
+
+O APK instalável é criado em:
+
+```text
+android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Para abrir o projeto no Android Studio:
+
+```bash
+npm run android:open
+```
+
+Antes de publicar na Play Store, configure uma chave de assinatura privada e gere um Android App Bundle (`.aab`) de release. Arquivos `.jks` e `.keystore` são ignorados pelo Git.

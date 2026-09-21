@@ -4,3 +4,11 @@ dist/
 .env
 .env.local
 .env.*.local
+
+# Android / Capacitor
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.jks
+*.keystore

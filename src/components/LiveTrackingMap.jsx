@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
-import { subscribeToRoute, supabase, distanceKm } from '../lib/supabase'
+import { getRouteLocation, subscribeToRouteLocation, supabase, distanceKm } from '../lib/supabase'
+import { MAP_ATTRIBUTION, MAP_TILE_URL } from '../lib/mapConfig'
 import 'leaflet/dist/leaflet.css'
 
 const icon = (emoji, bg) =>
@@ -38,14 +39,23 @@ export default function LiveTrackingMap({ route, pickup }) {
   })
 
   useEffect(() => {
-    const channel = subscribeToRoute(route.id, (payload) => {
+    let mounted = true
+    getRouteLocation(route.id).then(({ data }) => {
+      if (!mounted || !data) return
+      setLive({ lat: data.lat, lng: data.lng, updatedAt: data.recorded_at })
+    })
+
+    const channel = subscribeToRouteLocation(route.id, (payload) => {
       setLive({
-        lat: payload.new.driver_lat,
-        lng: payload.new.driver_lng,
-        updatedAt: payload.new.location_updated_at,
+        lat: payload.new.lat,
+        lng: payload.new.lng,
+        updatedAt: payload.new.recorded_at,
       })
     })
-    return () => supabase.removeChannel(channel)
+    return () => {
+      mounted = false
+      supabase.removeChannel(channel)
+    }
   }, [route.id])
 
   const driverPos = live.lat && live.lng ? [live.lat, live.lng] : null
@@ -78,8 +88,8 @@ export default function LiveTrackingMap({ route, pickup }) {
       <div style={{ height: '20rem', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--line-700)' }}>
         <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
           <TileLayer
-            attribution='&copy; OpenStreetMap contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution={MAP_ATTRIBUTION}
+            url={MAP_TILE_URL}
           />
           {driverPos && (
             <Marker position={driverPos} icon={driverIcon}>

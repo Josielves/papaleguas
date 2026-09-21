@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { MapPin } from 'lucide-react'
 import {
   getMyBookings,
   getMyWaitlist,
@@ -130,7 +131,7 @@ export default function MyBookings({ user, onError, onSuccess }) {
                 </div>
 
                 {b.pickup_address && (
-                  <p style={{ marginTop: '0.625rem', fontSize: '0.8125rem' }}>📍 {b.pickup_address}</p>
+                  <p style={{ marginTop: '0.625rem', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}><MapPin size={14} /> {b.pickup_address}</p>
                 )}
 
                 {b.is_for_someone_else && (

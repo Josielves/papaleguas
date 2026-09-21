@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Bell } from 'lucide-react'
 import {
   getNotifications,
   markNotificationRead,
@@ -53,13 +54,14 @@ export default function NotificationCenter({ user, onNotice }) {
         aria-label={`Notificações${unread ? `, ${unread} não lidas` : ''}`}
         title="Notificações"
       >
-        <Logo compact />
+        <Bell className="notification-trigger__bell" size={19} aria-hidden="true" />
         {unread > 0 && <span className="notification-count">{unread > 9 ? '9+' : unread}</span>}
       </button>
 
       {open && (
         <div className="notification-menu">
           <div className="notification-menu__header">
+            <Logo compact />
             <div>
               <p className="eyebrow">Recados do Papaleguas</p>
               <h3>Notificações</h3>

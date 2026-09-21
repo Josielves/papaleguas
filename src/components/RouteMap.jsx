@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo } from 'react'
 import { CircleMarker, MapContainer, Polyline, Popup, TileLayer, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { getRegionName } from '../lib/supabase'
+import { MAP_ATTRIBUTION, MAP_TILE_URL } from '../lib/mapConfig'
 
 const REGION_POINTS = {
   centro: [-24.9555, -53.4552],
@@ -65,8 +66,8 @@ export default function RouteMap({ routes = [], myLocation, showHeader = true })
         className="route-map"
       >
         <TileLayer
-          attribution='&copy; OpenStreetMap contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution={MAP_ATTRIBUTION}
+          url={MAP_TILE_URL}
         />
         {mapRoutes.map(({ route, origin, destination }) => (
           <Fragment key={route.id}>

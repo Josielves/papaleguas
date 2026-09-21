@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
+import { Capacitor } from '@capacitor/core'
+import { Geolocation } from '@capacitor/geolocation'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -266,13 +268,35 @@ export function subscribeToNotifications(userId, onChange) {
     .subscribe()
 }
 
-export function updateDriverLocation(routeId, driverId, lat, lng) {
+export function updateDriverLocation(routeId, driverId, lat, lng, position = {}) {
   return supabase.rpc('update_driver_location', {
     p_route_id: routeId,
     p_driver_id: driverId,
     p_lat: lat,
     p_lng: lng,
+    p_accuracy_m: Number.isFinite(position.accuracy) ? position.accuracy : null,
+    p_heading: Number.isFinite(position.heading) ? position.heading : null,
+    p_speed_mps: Number.isFinite(position.speed) ? position.speed : null,
   })
+}
+
+export function getRouteLocation(routeId) {
+  return supabase
+    .from('route_locations')
+    .select('route_id, lat, lng, accuracy_m, heading, speed_mps, recorded_at')
+    .eq('route_id', routeId)
+    .maybeSingle()
+}
+
+export function subscribeToRouteLocation(routeId, onChange) {
+  return supabase
+    .channel(`route-location-${routeId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'route_locations', filter: `route_id=eq.${routeId}` },
+      onChange
+    )
+    .subscribe()
 }
 
 export function subscribeToSeats(routeId, onChange) {
@@ -298,6 +322,25 @@ export function subscribeToRoute(routeId, onChange) {
 }
 
 export function getCurrentPosition() {
+  if (Capacitor.isNativePlatform()) {
+    return Geolocation.checkPermissions()
+      .then(async (permissions) => {
+        if (permissions.location === 'prompt' || permissions.location === 'prompt-with-rationale') {
+          const requested = await Geolocation.requestPermissions()
+          if (requested.location !== 'granted') throw new Error('Permissão de localização negada.')
+        } else if (permissions.location !== 'granted') {
+          throw new Error('Permissão de localização negada.')
+        }
+
+        const position = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 5000,
+        })
+        return { lat: position.coords.latitude, lng: position.coords.longitude }
+      })
+  }
+
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       reject(new Error('Geolocalização indisponível.'))
@@ -312,29 +355,22 @@ export function getCurrentPosition() {
 }
 
 export async function reverseGeocode(lat, lng) {
-  const url = new URL('https://nominatim.openstreetmap.org/reverse')
-  url.searchParams.set('format', 'jsonv2')
-  url.searchParams.set('lat', lat)
-  url.searchParams.set('lon', lng)
-  const res = await fetch(url)
-  if (!res.ok) throw new Error('Falha ao buscar endereço.')
-  const data = await res.json()
-  return data.display_name || `Localização atual (${lat.toFixed(4)}, ${lng.toFixed(4)})`
+  const { data, error } = await supabase.functions.invoke('geocode', {
+    body: { type: 'reverse', lat, lng, language: 'pt-BR' },
+  })
+  if (error || !data?.display) throw new Error(data?.error || 'Falha ao buscar endereço.')
+  return data.display
 }
 
 export async function geocodeAddress(address) {
-  const url = new URL('https://nominatim.openstreetmap.org/search')
-  url.searchParams.set('format', 'jsonv2')
-  url.searchParams.set('limit', '1')
-  url.searchParams.set('q', address)
-  const res = await fetch(url)
-  if (!res.ok) return null
-  const [hit] = await res.json()
-  if (!hit) return null
+  const { data, error } = await supabase.functions.invoke('geocode', {
+    body: { type: 'search', query: address, language: 'pt-BR' },
+  })
+  if (error || !data?.display) return null
   return {
-    display: hit.display_name,
-    lat: Number(hit.lat),
-    lng: Number(hit.lon),
+    display: data.display,
+    lat: Number(data.lat),
+    lng: Number(data.lng),
   }
 }
 

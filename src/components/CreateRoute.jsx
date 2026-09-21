@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { MapPin } from 'lucide-react'
 import {
   REGIONS,
   getPrice,
@@ -203,7 +204,7 @@ export default function CreateRoute({ user, onCreated, onError, onSuccess }) {
                 onBlur={() => geocodeOnBlur('origin')}
               />
               <button type="button" className="btn btn-secondary btn-icon" onClick={() => useLocationFor('origin')} disabled={locating === 'origin'} title="Usar minha localização">
-                {locating === 'origin' ? '…' : '📍'}
+                {locating === 'origin' ? '…' : <MapPin size={18} aria-hidden="true" />}
               </button>
             </div>
           </div>
@@ -221,7 +222,7 @@ export default function CreateRoute({ user, onCreated, onError, onSuccess }) {
                 onBlur={() => geocodeOnBlur('destination')}
               />
               <button type="button" className="btn btn-secondary btn-icon" onClick={() => useLocationFor('destination')} disabled={locating === 'destination'} title="Usar minha localização">
-                {locating === 'destination' ? '…' : '📍'}
+                {locating === 'destination' ? '…' : <MapPin size={18} aria-hidden="true" />}
               </button>
             </div>
           </div>

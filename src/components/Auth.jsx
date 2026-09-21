@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CarFront } from 'lucide-react'
 import { signIn, signUp } from '../lib/supabase'
 import Logo from './Logo'
 
@@ -83,7 +84,7 @@ export default function Auth({ onAuthed }) {
                   className={`account-type-card ${accountType === 'driver' ? 'is-selected' : ''}`}
                   onClick={() => setAccountType('driver')}
                 >
-                  <h3 style={{ marginBottom: '0.25rem' }}>🚗 Dirigir</h3>
+                  <h3 style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CarFront size={19} /> Dirigir</h3>
                   <p style={{ fontSize: '0.8125rem' }}>Criar rotas e levar passageiros</p>
                 </button>
               </div>

@@ -15,8 +15,9 @@ npm audit --audit-level=moderate --cache .npm-cache
 Resultado:
 
 - Build de producao aprovado.
-- Bundle principal: 563.32 kB minificado, 160.59 kB gzip. Precisa de code splitting antes de trafego alto.
-- Auditoria npm falhando por 6 vulnerabilidades: 3 moderadas e 3 altas. `npm audit fix` resolve parte; `esbuild/vite` exige decisao de upgrade maior.
+- Os paineis principais usam carregamento sob demanda para separar mapas e fluxos administrativos do bundle inicial.
+- `npm audit --omit=dev` aprovado sem vulnerabilidades nas dependencias de producao.
+- A auditoria completa ainda aponta avisos nas ferramentas de build do Vite e `@capacitor/assets`; as correcoes restantes exigem upgrades maiores ou dependem dos mantenedores.
 
 ### Fluxos operacionais adicionados
 

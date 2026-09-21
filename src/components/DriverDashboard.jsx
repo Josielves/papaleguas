@@ -23,9 +23,9 @@ const FILTERS = [
   { id: 'cancelled', label: 'Canceladas' },
 ]
 
-export default function DriverDashboard({ user, onError, onSuccess }) {
-  const [routes, setRoutes] = useState([])
-  const [loading, setLoading] = useState(true)
+export default function DriverDashboard({ user, onError, onSuccess, view = 'main', initialRoutes = null }) {
+  const [routes, setRoutes] = useState(initialRoutes ?? [])
+  const [loading, setLoading] = useState(!initialRoutes)
   const [showCreate, setShowCreate] = useState(false)
   const [activeChat, setActiveChat] = useState(null)
   const [expandedRoute, setExpandedRoute] = useState(null)
@@ -42,7 +42,14 @@ export default function DriverDashboard({ user, onError, onSuccess }) {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [user.id])
+  useEffect(() => {
+    if (initialRoutes) {
+      setRoutes(initialRoutes)
+      setLoading(false)
+      return
+    }
+    load()
+  }, [user.id, initialRoutes])
   useEffect(() => () => stopBroadcast(), [stopBroadcast])
 
   async function handleCancel(route) {
@@ -110,76 +117,107 @@ export default function DriverDashboard({ user, onError, onSuccess }) {
   })
 
   const mappedRoutes = routes.filter(route => route.status !== 'cancelled').slice(0, 20)
+  const passengerBookings = routes.flatMap(route => (
+    (route.bookings ?? [])
+      .filter(booking => booking.status !== 'cancelled')
+      .map(booking => ({ ...booking, route }))
+  ))
+  const viewContent = {
+    main: {
+      eyebrow: 'Central operacional',
+      title: `Olá, ${firstName(user.name)} 👋`,
+      description: 'Acompanhe hoje suas viagens, passageiros e resultados.',
+    },
+    routes: {
+      eyebrow: 'Planejamento e operação',
+      title: 'Rotas',
+      description: 'Crie trajetos, inicie viagens e acompanhe a ocupação.',
+    },
+    bookings: {
+      eyebrow: 'Manifesto consolidado',
+      title: 'Reservas',
+      description: 'Consulte passageiros, assentos e pontos de embarque.',
+    },
+    messages: {
+      eyebrow: 'Atendimento',
+      title: 'Mensagens',
+      description: 'Fale diretamente com os passageiros das suas rotas.',
+    },
+  }[view] ?? null
 
   return (
     <main className="page-container driver-console">
       <div className="driver-console__header">
         <div>
-          <p className="eyebrow">Central operacional</p>
-          <h1>Olá, {firstName(user.name)}</h1>
-          <p>Organize partidas, acompanhe ocupação e fale com os passageiros.</p>
+          <p className="eyebrow">{viewContent.eyebrow}</p>
+          <h1>{viewContent.title}</h1>
+          <p>{viewContent.description}</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowCreate(true)}>Nova rota</button>
+        {(view === 'main' || view === 'routes') && (
+          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>Nova rota</button>
+        )}
       </div>
 
-      <section className="driver-overview" aria-label="Resumo da operação">
-        <div className="driver-kpis">
-          <Metric label="Rotas ativas" value={metrics.active} tone="teal" />
-          <Metric label="Próximas saídas" value={metrics.scheduled} />
-          <Metric label="Passageiros" value={metrics.passengers} />
-          <Metric label="Ocupação" value={`${metrics.occupancy}%`} tone="amber" />
-          <Metric label="Receita estimada" value={formatPrice(metrics.revenue)} wide />
-        </div>
-        <div className="driver-map-panel">
-          <div className="driver-map-panel__header">
-            <div>
-              <p className="eyebrow">Cobertura</p>
-              <h3>Suas rotas no mapa</h3>
+      {view === 'main' && (
+        <>
+          <section className="driver-home" aria-label="Resumo da operação">
+            <div className="driver-kpis driver-kpis--summary">
+              <Metric label="Passageiros" value={metrics.passengers} tone="teal" />
+              <Metric label="Receita estimada" value={formatPrice(metrics.revenue)} />
+              <Metric label="Ocupação" value={`${metrics.occupancy}%`} tone="amber" />
             </div>
-            <span className="live-chip"><span /> {mappedRoutes.length} planejadas</span>
-          </div>
-          <RouteMap routes={mappedRoutes} showHeader={false} />
-        </div>
-      </section>
-
-      <section className="departure-board">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Fila de saída</p>
-            <h2>Rotas prontas para iniciar</h2>
-          </div>
-          <span className="tag">{departureQueue.length} agendadas</span>
-        </div>
-
-        {!loading && departureQueue.length === 0 && (
-          <div className="compact-empty">Nenhuma partida aguardando início.</div>
-        )}
-
-        <div className="departure-list">
-          {departureQueue.slice(0, 4).map((route, index) => (
-            <article className="departure-item" key={route.id}>
-              <span className="departure-item__order">{String(index + 1).padStart(2, '0')}</span>
-              <div className="departure-item__time">
-                <strong>{timeOnly(route.departure_time)}</strong>
-                <small>{dateOnly(route.departure_time)}</small>
+            <div className="driver-map-panel">
+              <div className="driver-map-panel__header">
+                <div>
+                  <p className="eyebrow">Cobertura</p>
+                  <h3>Suas rotas no mapa</h3>
+                </div>
+                <span className="live-chip"><span /> {mappedRoutes.length} planejadas</span>
               </div>
-              <div className="departure-item__route">
-                <strong>{getRegionName(route.origin_region)} → {getRegionName(route.destination_region)}</strong>
-                <small>{route.origin_address || 'Origem a confirmar'} → {route.destination_address || 'Destino a confirmar'}</small>
-              </div>
-              <div className="departure-item__capacity">
-                <span>{route.available_seats}/{route.total_seats} vagas</span>
-                <OccupancyBar route={route} />
-              </div>
-              <button className="btn btn-primary" onClick={() => handleStart(route.id)} disabled={starting === route.id}>
-                {starting === route.id ? 'Iniciando…' : 'Iniciar rota'}
-              </button>
-            </article>
-          ))}
-        </div>
-      </section>
+              <RouteMap routes={mappedRoutes} showHeader={false} />
+            </div>
+          </section>
 
-      <section className="route-management">
+          <section className="departure-board">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">Fila de saída</p>
+                <h2>Rotas prontas para iniciar</h2>
+              </div>
+              <span className="tag">{departureQueue.length} agendadas</span>
+            </div>
+
+            {!loading && departureQueue.length === 0 && (
+              <div className="compact-empty">Nenhuma partida aguardando início.</div>
+            )}
+
+            <div className="departure-list">
+              {departureQueue.slice(0, 4).map((route, index) => (
+                <article className="departure-item" key={route.id}>
+                  <span className="departure-item__order">{String(index + 1).padStart(2, '0')}</span>
+                  <div className="departure-item__time">
+                    <strong>{timeOnly(route.departure_time)}</strong>
+                    <small>{dateOnly(route.departure_time)}</small>
+                  </div>
+                  <div className="departure-item__route">
+                    <strong>{getRegionName(route.origin_region)} → {getRegionName(route.destination_region)}</strong>
+                    <small>{route.origin_address || 'Origem a confirmar'} → {route.destination_address || 'Destino a confirmar'}</small>
+                  </div>
+                  <div className="departure-item__capacity">
+                    <span>{route.available_seats}/{route.total_seats} vagas</span>
+                    <OccupancyBar route={route} />
+                  </div>
+                  <button className="btn btn-primary" onClick={() => handleStart(route.id)} disabled={starting === route.id}>
+                    {starting === route.id ? 'Iniciando…' : 'Iniciar rota'}
+                  </button>
+                </article>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
+
+      {view === 'routes' && <section className="route-management">
         <div className="route-management__toolbar">
           <div>
             <p className="eyebrow">Gestão</p>
@@ -312,7 +350,25 @@ export default function DriverDashboard({ user, onError, onSuccess }) {
             )
           })}
         </div>
-      </section>
+      </section>}
+
+      {view === 'bookings' && (
+        <PassengerWorkspace
+          bookings={passengerBookings}
+          loading={loading}
+          mode="bookings"
+          onMessage={setActiveChat}
+        />
+      )}
+
+      {view === 'messages' && (
+        <PassengerWorkspace
+          bookings={passengerBookings}
+          loading={loading}
+          mode="messages"
+          onMessage={setActiveChat}
+        />
+      )}
 
       {showCreate && (
         <Modal title="Planejar nova rota" onClose={() => setShowCreate(false)}>
@@ -334,12 +390,74 @@ export default function DriverDashboard({ user, onError, onSuccess }) {
   )
 }
 
-function Metric({ label, value, tone = '', wide = false }) {
+function Metric({ label, value, tone = '' }) {
   return (
-    <div className={`driver-kpi ${tone ? `driver-kpi--${tone}` : ''} ${wide ? 'driver-kpi--wide' : ''}`}>
+    <div className={`driver-kpi ${tone ? `driver-kpi--${tone}` : ''}`}>
       <strong>{value}</strong>
       <span>{label}</span>
     </div>
+  )
+}
+
+function PassengerWorkspace({ bookings, loading, mode, onMessage }) {
+  const isMessages = mode === 'messages'
+
+  return (
+    <section className="driver-directory">
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow">{isMessages ? 'Conversas disponíveis' : 'Passageiros confirmados'}</p>
+          <h2>{isMessages ? 'Central de mensagens' : 'Manifesto de reservas'}</h2>
+        </div>
+        {!loading && <span className="tag">{bookings.length} {bookings.length === 1 ? 'passageiro' : 'passageiros'}</span>}
+      </div>
+
+      {loading && <SkeletonList />}
+      {!loading && bookings.length === 0 && (
+        <div className="empty-state">
+          <h3>{isMessages ? 'Nenhuma conversa disponível' : 'Nenhuma reserva confirmada'}</h3>
+          <p style={{ marginTop: '0.5rem' }}>Os passageiros aparecerão aqui quando reservarem uma rota.</p>
+        </div>
+      )}
+
+      <div className="driver-directory__list">
+        {bookings.map(booking => (
+          <article className="driver-directory__row" key={booking.id}>
+            <span className="avatar">
+              {booking.passenger?.avatar_url
+                ? <img src={booking.passenger.avatar_url} alt="" />
+                : initials(booking.passenger?.name)}
+            </span>
+            <div className="driver-directory__identity">
+              <strong>{booking.is_for_someone_else ? booking.recipient_name : booking.passenger?.name}</strong>
+              <span>{getRegionName(booking.route.origin_region)} → {getRegionName(booking.route.destination_region)}</span>
+            </div>
+            <div className="driver-directory__trip">
+              <strong>Assento {booking.seat_number}</strong>
+              <span>{booking.pickup_address || 'Embarque não informado'}</span>
+            </div>
+            <div className="driver-directory__actions">
+              {whatsAppLink(booking.is_for_someone_else ? booking.recipient_phone : booking.passenger?.phone) && (
+                <a
+                  className="btn btn-secondary"
+                  href={whatsAppLink(
+                    booking.is_for_someone_else ? booking.recipient_phone : booking.passenger?.phone,
+                    'Olá! Sou o motorista da sua rota Papaleguas.'
+                  )}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  WhatsApp
+                </a>
+              )}
+              <button className="btn btn-primary" type="button" onClick={() => onMessage(booking)}>
+                {isMessages ? 'Abrir conversa' : 'Mensagem'}
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   )
 }
 
