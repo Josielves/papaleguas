@@ -21,12 +21,28 @@ function routePoint(route, type) {
 
 function FitMap({ points }) {
   const map = useMap()
+  const pointsKey = JSON.stringify(points)
 
   useEffect(() => {
     const valid = points.filter(Boolean)
-    if (valid.length > 1) map.fitBounds(valid, { padding: [28, 28] })
-    else if (valid.length === 1) map.setView(valid[0], 13)
-  }, [map, JSON.stringify(points)])
+    const container = map.getContainer()
+    let frame = requestAnimationFrame(() => {
+      map.invalidateSize({ pan: false })
+      if (valid.length > 1) map.fitBounds(valid, { padding: [28, 28] })
+      else if (valid.length === 1) map.setView(valid[0], 13)
+    })
+
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => map.invalidateSize({ pan: false }))
+    })
+    observer.observe(container)
+
+    return () => {
+      cancelAnimationFrame(frame)
+      observer.disconnect()
+    }
+  }, [map, pointsKey])
 
   return null
 }
