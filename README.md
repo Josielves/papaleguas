@@ -93,6 +93,7 @@ supabase/schema.sql
 supabase/migration_scale_and_security.sql
 supabase/migration_operations_and_waitlist.sql
 supabase/migration_scalable_backend.sql
+supabase/migration_mobile_push_and_realtime.sql
 ```
 
 Se o schema principal já estiver instalado, execute somente as migrações que ainda não foram aplicadas.
@@ -103,8 +104,13 @@ A ultima migracao separa a localizacao em uma tabela propria, protege dados de p
 npx supabase login
 npx supabase link --project-ref SEU_PROJECT_REF
 npx supabase functions deploy geocode
+npx supabase functions deploy send-push --no-verify-jwt
 npx supabase secrets set GEOCODING_USER_AGENT="Papaleguas/2.0 (contato@seu-dominio.com)"
+npx supabase secrets set PUSH_WEBHOOK_SECRET="gere-um-segredo-forte"
 ```
+
+Configure o Database Webhook de `public.notifications` com o mesmo segredo no
+header `x-papaleguas-secret`.
 
 O plano de capacidade, configuracao de mapas e teste de carga estao em `docs/SCALING_ARCHITECTURE.md`.
 
@@ -182,6 +188,28 @@ src/
 ---
 
 ## APK Android
+
+O aplicativo movel principal agora esta em `mobile/` e usa React Native, mapa
+nativo e notificacoes do sistema. O projeto Capacitor em `android/` foi mantido
+temporariamente para compatibilidade com builds anteriores.
+
+Para gerar o APK React Native:
+
+```bash
+cd mobile
+npm install
+npm run android:apk
+```
+
+O APK React Native instalavel e criado em:
+
+```text
+mobile/android/app/build/outputs/apk/release/app-release.apk
+```
+
+Consulte `mobile/README.md` para Supabase, push e build de producao.
+
+### Aplicativo Capacitor legado
 
 O projeto Android usa Capacitor e fica em `android/`. O identificador do aplicativo é `com.papaleguas.app`.
 

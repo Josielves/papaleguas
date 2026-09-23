@@ -4,12 +4,17 @@ import sharp from 'sharp'
 
 const root = process.cwd()
 const outputDir = path.join(root, 'assets')
-const mark = await readFile(path.join(root, 'branding', 'papaleguas-mark.svg'))
+const mobileDir = path.join(root, 'mobile', 'assets')
+const mark = await readFile(path.join(root, 'branding', 'papaleguas-blue-roadrunner.png'))
 
-await mkdir(outputDir, { recursive: true })
+await Promise.all([
+  mkdir(outputDir, { recursive: true }),
+  mkdir(mobileDir, { recursive: true }),
+])
 
 async function resizedMark(size) {
   return sharp(mark)
+    .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .resize(size, size, {
       fit: 'contain',
       withoutEnlargement: false,
@@ -20,7 +25,7 @@ async function resizedMark(size) {
     .toBuffer()
 }
 
-async function squareCanvas(size, background, overlay, overlaySize) {
+async function squareCanvas(size, background, overlaySize) {
   const icon = await resizedMark(overlaySize)
   const offset = Math.round((size - overlaySize) / 2)
   return sharp({
@@ -31,32 +36,52 @@ async function squareCanvas(size, background, overlay, overlaySize) {
     .toBuffer()
 }
 
-const dark = { r: 11, g: 17, b: 32, alpha: 1 }
-const transparent = { r: 0, g: 0, b: 0, alpha: 0 }
+async function whiteSilhouette(size, overlaySize) {
+  const offset = Math.round((size - overlaySize) / 2)
+  const { data, info } = await sharp(await resizedMark(overlaySize))
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
 
-await sharp(await squareCanvas(1024, dark, mark, 760)).toFile(path.join(outputDir, 'icon-only.png'))
-await sharp(await squareCanvas(1024, transparent, mark, 620)).toFile(path.join(outputDir, 'icon-foreground.png'))
-await sharp({ create: { width: 1024, height: 1024, channels: 4, background: dark } })
-  .png()
-  .toFile(path.join(outputDir, 'icon-background.png'))
+  for (let index = 0; index < data.length; index += info.channels) {
+    data[index] = 255
+    data[index + 1] = 255
+    data[index + 2] = 255
+  }
 
-const splashLogo = await resizedMark(900)
-const wordmark = Buffer.from(`
-  <svg width="1600" height="320" xmlns="http://www.w3.org/2000/svg">
-    <text x="800" y="190" text-anchor="middle" fill="#f4f1ea"
-      font-family="Arial, sans-serif" font-size="190" font-weight="700">Papaleguas</text>
-    <rect x="515" y="250" width="570" height="12" rx="6" fill="#f5a623"/>
-  </svg>
-`)
-
-for (const filename of ['splash.png', 'splash-dark.png']) {
-  await sharp({ create: { width: 2732, height: 2732, channels: 4, background: dark } })
-    .composite([
-      { input: splashLogo, left: 916, top: 560 },
-      { input: wordmark, left: 566, top: 1480 },
-    ])
+  const whiteBird = await sharp(data, { raw: info }).png().toBuffer()
+  return sharp({
+    create: { width: size, height: size, channels: 4, background: transparent },
+  })
+    .composite([{ input: whiteBird, left: offset, top: offset }])
     .png()
-    .toFile(path.join(outputDir, filename))
+    .toBuffer()
 }
 
-console.log(`Assets oficiais gerados em ${outputDir}`)
+const light = { r: 248, g: 250, b: 252, alpha: 1 }
+const transparent = { r: 0, g: 0, b: 0, alpha: 0 }
+
+const icon = await squareCanvas(1024, light, 860)
+const foreground = await squareCanvas(1024, transparent, 700)
+const background = await sharp({
+  create: { width: 1024, height: 1024, channels: 4, background: light },
+}).png().toBuffer()
+const splash = await squareCanvas(1024, transparent, 760)
+const notification = await whiteSilhouette(96, 72)
+
+await Promise.all([
+  sharp(icon).toFile(path.join(outputDir, 'icon-only.png')),
+  sharp(foreground).toFile(path.join(outputDir, 'icon-foreground.png')),
+  sharp(background).toFile(path.join(outputDir, 'icon-background.png')),
+  sharp(await squareCanvas(2732, light, 1280)).toFile(path.join(outputDir, 'splash.png')),
+  sharp(await squareCanvas(2732, light, 1280)).toFile(path.join(outputDir, 'splash-dark.png')),
+  sharp(icon).toFile(path.join(mobileDir, 'icon.png')),
+  sharp(foreground).toFile(path.join(mobileDir, 'android-icon-foreground.png')),
+  sharp(background).toFile(path.join(mobileDir, 'android-icon-background.png')),
+  sharp(notification).toFile(path.join(mobileDir, 'android-icon-monochrome.png')),
+  sharp(notification).toFile(path.join(mobileDir, 'notification-icon.png')),
+  sharp(splash).toFile(path.join(mobileDir, 'splash-icon.png')),
+  sharp(icon).resize(96, 96).toFile(path.join(mobileDir, 'favicon.png')),
+])
+
+console.log(`Assets oficiais gerados em ${outputDir} e ${mobileDir}`)

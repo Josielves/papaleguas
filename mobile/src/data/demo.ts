@@ -1,0 +1,91 @@
+import type { AppNotification, Profile, Route } from '../types'
+
+export const demoProfile: Profile = {
+  id: 'demo-user',
+  name: 'João',
+  email: 'joao@papaleguas.app',
+  phone: '(45) 99999-1234',
+  account_type: 'passenger',
+  vehicle_model: 'Honda Civic',
+  vehicle_plate: 'PPL-2026',
+  vehicle_color: 'Azul',
+}
+
+export const demoRoutes: Route[] = [
+  {
+    id: 'demo-route-1',
+    driver_id: 'demo-driver',
+    origin_region: 'centro',
+    destination_region: 'norte',
+    origin_address: 'Centro, Cascavel - PR',
+    destination_address: 'Região Norte, Cascavel - PR',
+    origin_lat: -24.9555,
+    origin_lng: -53.4552,
+    destination_lat: -24.9229,
+    destination_lng: -53.4472,
+    driver_lat: -24.9454,
+    driver_lng: -53.4521,
+    location_updated_at: new Date().toISOString(),
+    departure_time: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
+    total_seats: 6,
+    available_seats: 2,
+    price: 10,
+    status: 'open',
+    vehicle_model: 'Honda Civic',
+    vehicle_plate: 'ABC-1D23',
+    driver: { id: 'demo-driver', name: 'João', phone: '(45) 99999-2222' },
+    seats: Array.from({ length: 6 }, (_, index) => ({
+      id: `demo-seat-${index + 1}`,
+      seat_number: index + 1,
+      status: [1, 4, 5, 6].includes(index + 1) ? 'occupied' : 'available',
+    })),
+    bookings: [
+      { id: 'booking-1', status: 'confirmed', amount: 10 },
+      { id: 'booking-2', status: 'confirmed', amount: 10 },
+      { id: 'booking-3', status: 'confirmed', amount: 10 },
+      { id: 'booking-4', status: 'confirmed', amount: 10 },
+    ],
+  },
+  {
+    id: 'demo-route-2',
+    driver_id: 'demo-driver-2',
+    origin_region: 'centro',
+    destination_region: 'sul',
+    origin_address: 'Terminal Oeste, Cascavel - PR',
+    destination_address: 'Universitário, Cascavel - PR',
+    origin_lat: -24.9576,
+    origin_lng: -53.4812,
+    destination_lat: -25.0024,
+    destination_lng: -53.4516,
+    departure_time: new Date(Date.now() + 105 * 60 * 1000).toISOString(),
+    total_seats: 4,
+    available_seats: 3,
+    price: 12,
+    status: 'open',
+    vehicle_model: 'Chevrolet Onix',
+    vehicle_plate: 'XYZ-9K87',
+    driver: { id: 'demo-driver-2', name: 'Marina' },
+    seats: Array.from({ length: 4 }, (_, index) => ({
+      id: `demo-route-2-seat-${index + 1}`,
+      seat_number: index + 1,
+      status: index === 0 ? 'occupied' : 'available',
+    })),
+  },
+]
+
+export const demoNotifications: AppNotification[] = [
+  {
+    id: 'notice-1',
+    title: 'Motorista a caminho',
+    message: 'João iniciou o trajeto e chega ao embarque em cerca de 8 minutos.',
+    created_at: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+    route_id: 'demo-route-1',
+  },
+  {
+    id: 'notice-2',
+    title: 'Vaga liberada',
+    message: 'Uma vaga ficou disponível na rota Centro → Norte.',
+    created_at: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
+    route_id: 'demo-route-1',
+  },
+]
