@@ -777,6 +777,11 @@
     box-shadow: inset 0 0 0 0.35rem rgba(148, 163, 184, 0.16);
   }
 
+  .vehicle-cabin--van {
+    width: min(100%, 20rem);
+    border-radius: 2rem 2rem 0.75rem 0.75rem;
+  }
+
   .vehicle-cabin::before,
   .vehicle-cabin::after {
     content: '';
@@ -2218,7 +2223,86 @@ input[type="datetime-local"] {
 
   .form-grid { display: grid; gap: 0.875rem; }
   .form-grid--three { grid-template-columns: 1.4fr 1fr 0.8fr; }
+  .form-grid--vehicle { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .input[readonly] { color: var(--mist-400); cursor: not-allowed; }
+
+  .vehicle-lookup-row {
+    display: grid;
+    grid-template-columns: minmax(12rem, 1fr) auto auto;
+    align-items: end;
+    gap: 0.75rem;
+    margin-bottom: 0.875rem;
+  }
+
+  .vehicle-verified {
+    min-height: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--teal-500);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .vehicle-type-control {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    margin-bottom: 0.875rem;
+    padding: 0.25rem;
+    border: 1px solid var(--line-700);
+    border-radius: 8px;
+    background: var(--ink-800);
+  }
+
+  .vehicle-type-control button {
+    min-height: 3.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    border: 0;
+    border-radius: 6px;
+    color: var(--mist-400);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .vehicle-type-control button.is-selected {
+    color: var(--teal-500);
+    background: var(--ink-900);
+    box-shadow: 0 1px 3px rgb(15 23 42 / 10%);
+  }
+
+  .vehicle-type-control button span {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .vehicle-type-control button strong { color: inherit; font-size: 0.875rem; }
+  .vehicle-type-control button small { color: var(--mist-400); font-size: 0.72rem; }
+
+  .vehicle-capacity-note {
+    margin-top: 0.625rem;
+    color: var(--mist-400);
+    font-size: 0.75rem;
+  }
+
+  .route-vehicle-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    border: 1px solid var(--line-700);
+    border-radius: 8px;
+    color: var(--teal-500);
+    background: var(--ink-800);
+  }
+
+  .route-vehicle-summary div { min-width: 0; display: flex; flex-direction: column; }
+  .route-vehicle-summary strong { color: var(--ink-950); font-size: 0.875rem; }
+  .route-vehicle-summary span { color: var(--mist-400); font-size: 0.75rem; }
 }
 
 /* -------------------------------------------------------------------------
@@ -2811,6 +2895,10 @@ input[type="datetime-local"] {
   .profile-editor__photo { grid-row: auto; margin-bottom: 1rem; }
   .vehicle-fields { grid-column: auto; }
   .form-grid--three { grid-template-columns: 1fr; }
+  .form-grid--vehicle { grid-template-columns: 1fr; }
+  .vehicle-lookup-row { grid-template-columns: 1fr; align-items: stretch; }
+  .vehicle-lookup-row .btn { width: 100%; }
+  .vehicle-verified { min-height: 0; }
 }
 
 @media (max-width: 639px) {

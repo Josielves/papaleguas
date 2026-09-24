@@ -6,9 +6,14 @@ export const demoProfile: Profile = {
   email: 'joao@papaleguas.app',
   phone: '(45) 99999-1234',
   account_type: 'passenger',
+  vehicle_brand: 'Honda',
   vehicle_model: 'Honda Civic',
   vehicle_plate: 'PPL-2026',
   vehicle_color: 'Azul',
+  vehicle_year: 2022,
+  vehicle_model_year: 2023,
+  vehicle_type: 'car',
+  vehicle_capacity: 4,
 }
 
 export const demoRoutes: Route[] = [
@@ -33,6 +38,10 @@ export const demoRoutes: Route[] = [
     status: 'open',
     vehicle_model: 'Honda Civic',
     vehicle_plate: 'ABC-1D23',
+    vehicle_brand: 'Honda',
+    vehicle_color: 'Prata',
+    vehicle_type: 'car',
+    vehicle_capacity: 6,
     driver: { id: 'demo-driver', name: 'João', phone: '(45) 99999-2222' },
     seats: Array.from({ length: 6 }, (_, index) => ({
       id: `demo-seat-${index + 1}`,
@@ -64,6 +73,10 @@ export const demoRoutes: Route[] = [
     status: 'open',
     vehicle_model: 'Chevrolet Onix',
     vehicle_plate: 'XYZ-9K87',
+    vehicle_brand: 'Chevrolet',
+    vehicle_color: 'Branco',
+    vehicle_type: 'car',
+    vehicle_capacity: 4,
     driver: { id: 'demo-driver-2', name: 'Marina' },
     seats: Array.from({ length: 4 }, (_, index) => ({
       id: `demo-route-2-seat-${index + 1}`,

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { ArrowLeft, CarFront, MapPin, ShieldCheck, Star } from 'lucide-react-native'
+import { ArrowLeft, BusFront, CarFront, MapPin, ShieldCheck, Star } from 'lucide-react-native'
 import { LiveRouteMap } from '../components/LiveRouteMap'
 import { SeatMap } from '../components/SeatMap'
 import { supabase } from '../lib/supabase'
@@ -14,6 +14,7 @@ type Props = {
 }
 
 export function RouteDetails({ route, profile, onBack }: Props) {
+  const VehicleIcon = route.vehicle_type === 'van' ? BusFront : CarFront
   const initialSeats = useMemo<Seat[]>(() => route.seats?.length
     ? route.seats
     : Array.from({ length: route.total_seats }, (_, index) => ({
@@ -77,7 +78,7 @@ export function RouteDetails({ route, profile, onBack }: Props) {
           <View style={styles.avatar}><Text style={styles.avatarText}>{route.driver?.name?.[0] ?? 'P'}</Text></View>
           <View style={{ flex: 1 }}>
             <Text style={styles.driver}>{route.driver?.name ?? 'Motorista Papaleguas'}</Text>
-            <View style={styles.inline}><CarFront size={15} color={colors.textMuted} /><Text style={styles.muted}>{route.vehicle_model ?? 'Veículo cadastrado'}</Text></View>
+            <View style={styles.inline}><VehicleIcon size={15} color={colors.textMuted} /><Text style={styles.muted}>{[route.vehicle_brand, route.vehicle_model].filter(Boolean).join(' ') || 'Veículo cadastrado'}{route.vehicle_capacity ? ` · ${route.vehicle_capacity} lugares` : ''}</Text></View>
           </View>
           <View style={styles.rating}><Star size={15} color={colors.amber} fill={colors.amber} /><Text style={styles.ratingText}>4,9</Text></View>
         </View>
@@ -86,7 +87,7 @@ export function RouteDetails({ route, profile, onBack }: Props) {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Escolha seu assento</Text>
-        <SeatMap seats={seats} selected={selected} onSelect={setSelected} />
+        <SeatMap seats={seats} selected={selected} onSelect={setSelected} vehicleType={route.vehicle_type === 'van' ? 'van' : 'car'} />
       </View>
 
       <View style={styles.section}>

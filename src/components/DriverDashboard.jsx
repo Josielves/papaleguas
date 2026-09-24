@@ -266,7 +266,12 @@ export default function DriverDashboard({ user, onError, onSuccess, view = 'main
                   </div>
                   <div className="admin-route__path">
                     <strong>{getRegionName(route.origin_region)} → {getRegionName(route.destination_region)}</strong>
-                    <span>{route.vehicle_model || user.vehicle_model || 'Veículo não informado'}{route.vehicle_plate ? ` · ${route.vehicle_plate}` : ''}</span>
+                    <span>
+                      {route.vehicle_type === 'van' ? 'Van · ' : 'Carro · '}
+                      {[route.vehicle_brand, route.vehicle_model || user.vehicle_model].filter(Boolean).join(' ') || 'Veículo não informado'}
+                      {route.vehicle_plate ? ` · ${route.vehicle_plate}` : ''}
+                      {route.vehicle_capacity ? ` · ${route.vehicle_capacity} lugares` : ''}
+                    </span>
                   </div>
                   <div className="admin-route__occupancy">
                     <span>{activeBookings.length} passageiros · {waitlist.length} na fila</span>

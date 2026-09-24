@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -80,6 +80,15 @@ function ensureAndroidSdkConfig(sdkPath) {
   writeFileSync(propertiesFile, `sdk.dir=${escapedPath}\n`)
 }
 
+function reuseLegacyDebugKeystore() {
+  const legacyKeystore = path.join(os.homedir(), '.android', 'debug.keystore')
+  const appKeystore = path.join(androidDir, 'app', 'debug.keystore')
+  if (!existsSync(legacyKeystore) || !existsSync(path.dirname(appKeystore))) return
+
+  copyFileSync(legacyKeystore, appKeystore)
+  console.log(`Assinatura de atualizacao reutilizada: ${legacyKeystore}`)
+}
+
 function javaMajor(jdkPath) {
   const binary = path.join(jdkPath, 'bin', javaExecutable)
   if (!existsSync(binary)) return null
@@ -111,6 +120,7 @@ if (!androidSdk) {
 }
 
 ensureAndroidSdkConfig(androidSdk)
+reuseLegacyDebugKeystore()
 
 const env = {
   ...process.env,
@@ -123,7 +133,7 @@ const env = {
 
 applyWindowsCppLinkWorkaround()
 console.log(`Compilando React Native Android com JDK ${javaMajor(compatibleJdk)}: ${compatibleJdk}`)
-const architectures = process.env.ANDROID_ABIS || 'arm64-v8a'
+const architectures = process.env.ANDROID_ABIS || 'armeabi-v7a,arm64-v8a'
 const variant = (process.env.ANDROID_VARIANT || 'release').toLowerCase()
 if (!['debug', 'release'].includes(variant)) {
   console.error('ANDROID_VARIANT deve ser debug ou release.')

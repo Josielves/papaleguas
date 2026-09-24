@@ -150,7 +150,7 @@ export default function CreateRoute({ onCreated }) {
         <div className="space-y-3">
           <input type="date" value={form.routeDate} onChange={update('routeDate')} className="w-full px-4 py-3 rounded-xl border border-[#0b0f08]/10 bg-white" />
           <input type="time" value={form.routeTime} onChange={update('routeTime')} className="w-full px-4 py-3 rounded-xl border border-[#0b0f08]/10 bg-white" />
-          <input type="number" min={1} max={8} value={form.totalSeats} onChange={update('totalSeats')} placeholder="Assentos disponíveis" className="w-full px-4 py-3 rounded-xl border border-[#0b0f08]/10 bg-white" />
+          <input type="number" min={1} max={20} value={form.totalSeats} onChange={update('totalSeats')} placeholder="Assentos disponíveis" className="w-full px-4 py-3 rounded-xl border border-[#0b0f08]/10 bg-white" />
           <input value={form.vehicleModel} onChange={update('vehicleModel')} placeholder="Modelo do veículo" className="w-full px-4 py-3 rounded-xl border border-[#0b0f08]/10 bg-white" />
           <input value={form.vehiclePlate} onChange={update('vehiclePlate')} placeholder="Placa" className="w-full px-4 py-3 rounded-xl border border-[#0b0f08]/10 bg-white uppercase" />
         </div>

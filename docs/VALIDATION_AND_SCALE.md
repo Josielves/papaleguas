@@ -26,6 +26,8 @@ Resultado:
 - Cancelamento de reserva promove atomicamente a primeira pessoa da fila para o mesmo assento.
 - Motorista e passageiro promovido recebem notificacao persistida no banco e em tempo real.
 - Perfil permite foto e contato; motoristas tambem cadastram modelo, cor e placa do veiculo.
+- Consulta de placa ocorre pela Edge Function autenticada, com cache de 30 dias e cota diaria por usuario.
+- Motorista pode cadastrar carro (ate 8 passageiros) ou van (ate 20) e a RPC impede rotas acima da capacidade.
 
 Para estes fluxos, aplique `supabase/migration_operations_and_waitlist.sql` depois das migracoes anteriores.
 
@@ -34,7 +36,7 @@ Para estes fluxos, aplique `supabase/migration_operations_and_waitlist.sql` depo
 - Cadastro de passageiro cria `profiles.name`, `profiles.phone`, `profiles.account_type = passenger`.
 - Cadastro de motorista cria `profiles.account_type = driver`.
 - Login e logout preservam/limpam sessao.
-- Motorista cria rota futura com 2 a 6 assentos.
+- Motorista cria rota futura com 1 a 20 assentos, respeitando a capacidade cadastrada do veiculo.
 - Motorista inicia rota; rota muda de `scheduled` para `open`.
 - Passageiro busca rotas abertas por origem/destino.
 - Passageiro reserva assento; `seats.status` muda para `reserved`, `bookings.status` fica `confirmed`, `routes.available_seats` decrementa.

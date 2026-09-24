@@ -47,7 +47,7 @@ export default function App() {
     if (!supabase || !session?.user) return
     supabase
       .from('profiles')
-      .select('id,name,phone,avatar_url,account_type,vehicle_model,vehicle_plate,vehicle_color')
+      .select('id,name,phone,avatar_url,account_type,vehicle_brand,vehicle_model,vehicle_plate,vehicle_color,vehicle_year,vehicle_model_year,vehicle_type,vehicle_capacity,vehicle_lookup_verified_at')
       .eq('id', session.user.id)
       .single()
       .then(({ data }) => {

@@ -16,6 +16,19 @@ create table if not exists public.profiles (
   address       text,
   account_type  text not null default 'passenger' check (account_type in ('passenger', 'driver')),
   avatar_url    text,
+  vehicle_brand text,
+  vehicle_model text,
+  vehicle_plate text,
+  vehicle_color text,
+  vehicle_year int check (vehicle_year is null or vehicle_year between 1886 and 2100),
+  vehicle_model_year int check (vehicle_model_year is null or vehicle_model_year between 1886 and 2100),
+  vehicle_type text not null default 'car' check (vehicle_type in ('car', 'van')),
+  vehicle_capacity int not null default 6 check (
+    (vehicle_type = 'car' and vehicle_capacity between 1 and 8)
+    or (vehicle_type = 'van' and vehicle_capacity between 4 and 20)
+  ),
+  vehicle_lookup_verified_at timestamptz,
+  updated_at    timestamptz not null default now(),
   created_at    timestamptz not null default now()
 );
 
@@ -126,17 +139,24 @@ create table if not exists public.routes (
   destination_lat     double precision,
   destination_lng     double precision,
   departure_time      timestamptz not null,
-  total_seats         int not null check (total_seats between 1 and 8),
+  total_seats         int not null check (total_seats between 1 and 20),
   available_seats     int not null,
+  vehicle_brand       text,
   vehicle_model       text,
   vehicle_plate       text,
+  vehicle_color       text,
+  vehicle_year        int,
+  vehicle_model_year  int,
+  vehicle_type        text not null default 'car' check (vehicle_type in ('car', 'van')),
+  vehicle_capacity    int not null default 6 check (vehicle_capacity between 1 and 20),
   notes               text,
   status              text not null default 'scheduled' check (status in ('scheduled', 'open', 'full', 'cancelled')),
   started_at          timestamptz,
   driver_lat          double precision,
   driver_lng          double precision,
   location_updated_at timestamptz,
-  created_at          timestamptz not null default now()
+  created_at          timestamptz not null default now(),
+  check (total_seats <= vehicle_capacity)
 );
 
 alter table public.routes enable row level security;

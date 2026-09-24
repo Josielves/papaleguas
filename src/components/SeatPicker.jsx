@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CarFront, LocateFixed, MapPin } from 'lucide-react'
+import { BusFront, CarFront, LocateFixed, MapPin } from 'lucide-react'
 import {
   reserveSeat,
   subscribeToSeats,
@@ -39,6 +39,7 @@ export default function SeatPicker({ route, user, onDone, onError, onSuccess }) 
   const sorted = [...seats].sort((left, right) => left.seat_number - right.seat_number)
   const price = getPrice(route.origin_region, route.destination_region)
   const canConfirm = Boolean(selected && (!isForSomeoneElse || recipientName.trim()))
+  const VehicleIcon = route.vehicle_type === 'van' ? BusFront : CarFront
 
   async function useMyLocation() {
     setLocating(true)
@@ -89,10 +90,10 @@ export default function SeatPicker({ route, user, onDone, onError, onSuccess }) 
             <p className="eyebrow">Mapa de assentos</p>
             <h3 id="vehicle-view-title">Visão do veículo</h3>
           </div>
-          <span aria-hidden="true"><CarFront size={20} /></span>
+          <span aria-hidden="true"><VehicleIcon size={20} /></span>
         </div>
 
-        <div className="vehicle-cabin">
+        <div className={`vehicle-cabin ${route.vehicle_type === 'van' ? 'vehicle-cabin--van' : ''}`}>
           <div className="vehicle-cabin__front" aria-hidden="true">
             <span className="vehicle-cabin__wheel">◉</span>
             <small>Frente</small>

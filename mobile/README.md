@@ -8,8 +8,9 @@ administrativo permanece na raiz do repositorio.
 1. Copie `.env.example` para `.env`.
 2. Informe a URL e a chave publicavel do Supabase.
 3. Informe o Project ID do Expo para registrar push tokens.
-4. No Supabase, execute `migration_mobile_push_and_realtime.sql` depois das
-   migracoes anteriores.
+4. No Supabase, execute `migration_mobile_push_and_realtime.sql` e depois
+   `migration_vehicle_lookup_and_vans.sql`.
+5. Publique a Edge Function `vehicle-lookup` e configure a chave do provedor.
 
 ```powershell
 npm install
@@ -25,7 +26,7 @@ validacao visual e navegacao local.
 npm run android:apk
 ```
 
-O build local gera um APK de teste para celulares ARM64 em:
+O build local gera um APK de teste para celulares Android ARM de 32 e 64 bits em:
 
 ```text
 android/app/build/outputs/apk/release/app-release.apk
@@ -35,6 +36,11 @@ Defina `ANDROID_ABIS` antes do comando para compilar outra lista de arquiteturas
 O script aplica automaticamente um ajuste de link do NDK necessario apenas no
 toolchain local do Windows.
 
+Para permitir a atualizacao do aplicativo Capacitor anterior, o build local
+reutiliza a chave de desenvolvimento em `~/.android/debug.keystore`. O
+`versionCode` atual e 3. Se o aplicativo instalado veio de outra chave, sera
+necessario desinstala-lo antes de instalar este APK.
+
 O comando gera `release` por padrao, com o JavaScript incorporado e assinatura
 de desenvolvimento para testes. Para uma variante conectada ao Metro, defina
 `ANDROID_VARIANT=debug`.
@@ -42,6 +48,18 @@ de desenvolvimento para testes. Para uma variante conectada ao Metro, defina
 Para distribuicao na Play Store, configure a assinatura de release e gere AAB
 com EAS Build ou Gradle. Push remoto tambem exige credenciais FCM/APNs e o
 Project ID real do Expo.
+
+## Consulta de veiculo pela placa
+
+```powershell
+npx supabase functions deploy vehicle-lookup
+npx supabase secrets set VEHICLE_LOOKUP_PROVIDER="fipeplaca" VEHICLE_LOOKUP_API_TOKEN="SUA_CHAVE"
+npx supabase secrets set VEHICLE_LOOKUP_DAILY_LIMIT="20"
+```
+
+A chave da API fica apenas no Supabase. Nunca use uma variavel `EXPO_PUBLIC_*`
+para esse segredo. O motorista confirma se o veiculo e carro ou van e informa a
+capacidade real de passageiros depois da consulta.
 
 ## Push remoto
 

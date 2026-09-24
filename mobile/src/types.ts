@@ -7,9 +7,15 @@ export type Profile = {
   phone?: string | null
   avatar_url?: string | null
   account_type?: AppRole
+  vehicle_brand?: string | null
   vehicle_model?: string | null
   vehicle_plate?: string | null
   vehicle_color?: string | null
+  vehicle_year?: number | null
+  vehicle_model_year?: number | null
+  vehicle_type?: 'car' | 'van' | null
+  vehicle_capacity?: number | null
+  vehicle_lookup_verified_at?: string | null
 }
 
 export type Seat = {
@@ -54,6 +60,12 @@ export type Route = {
   status: string
   vehicle_model?: string | null
   vehicle_plate?: string | null
+  vehicle_brand?: string | null
+  vehicle_color?: string | null
+  vehicle_year?: number | null
+  vehicle_model_year?: number | null
+  vehicle_type?: 'car' | 'van' | null
+  vehicle_capacity?: number | null
   driver?: Driver | null
   seats?: Seat[]
   bookings?: Booking[]

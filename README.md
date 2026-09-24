@@ -45,7 +45,8 @@ Aplicativo React + Tailwind para transporte compartilhado por rotas fixas entre 
 
 ### Perfil do usuário
 - Foto, nome, telefone, endereço e e-mail da conta
-- Modelo, cor e placa do veículo para motoristas
+- Consulta da placa pelo backend para preencher marca, modelo, ano e cor
+- Cadastro de carro ou van com capacidade confirmada pelo motorista
 - Dados do veículo preenchidos automaticamente ao criar uma rota
 
 ### 🛣️ Criação de Rota (Motorista) — 3 passos
@@ -59,8 +60,8 @@ Aplicativo React + Tailwind para transporte compartilhado por rotas fixas entre 
 
 **Passo 3 - Detalhes:**
 - Data e horário de saída
-- Número de assentos (2 a 6)
-- Modelo e placa do veículo
+- Quantidade de assentos limitada à capacidade do carro ou da van (até 20)
+- Modelo e placa do veículo validados a partir do perfil
 - Observações
 - Resumo com preço calculado
 
@@ -94,20 +95,31 @@ supabase/migration_scale_and_security.sql
 supabase/migration_operations_and_waitlist.sql
 supabase/migration_scalable_backend.sql
 supabase/migration_mobile_push_and_realtime.sql
+supabase/migration_vehicle_lookup_and_vans.sql
 ```
 
 Se o schema principal já estiver instalado, execute somente as migrações que ainda não foram aplicadas.
 
-A ultima migracao separa a localizacao em uma tabela propria, protege dados de perfil e cria o cache de geocodificacao. Depois dela, publique a Edge Function:
+As migracoes finais protegem o rastreamento, criam os caches e adicionam o
+cadastro de carro ou van. Depois delas, publique as Edge Functions:
 
 ```bash
 npx supabase login
 npx supabase link --project-ref SEU_PROJECT_REF
 npx supabase functions deploy geocode
+npx supabase functions deploy vehicle-lookup
 npx supabase functions deploy send-push --no-verify-jwt
 npx supabase secrets set GEOCODING_USER_AGENT="Papaleguas/2.0 (contato@seu-dominio.com)"
+npx supabase secrets set VEHICLE_LOOKUP_PROVIDER="fipeplaca" VEHICLE_LOOKUP_API_TOKEN="SUA_CHAVE"
+npx supabase secrets set VEHICLE_LOOKUP_DAILY_LIMIT="20"
 npx supabase secrets set PUSH_WEBHOOK_SECRET="gere-um-segredo-forte"
 ```
+
+A Edge Function usa `https://api.fipeplaca.com.br/gateway/v1` por padrao e
+mantem a chave somente no Supabase. O provedor e pago e exige saldo. Para usar
+o provedor Placa Fipe, configure `VEHICLE_LOOKUP_PROVIDER="placafipe"` e a chave
+correspondente. Resultados bem-sucedidos ficam em cache por 30 dias para reduzir
+custo e chamadas repetidas.
 
 Configure o Database Webhook de `public.notifications` com o mesmo segredo no
 header `x-papaleguas-secret`.

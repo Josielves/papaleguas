@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { ArrowRight, CarFront, CircleDollarSign, MapPin, Play, Route as RouteIcon, UsersRound } from 'lucide-react-native'
+import { ArrowRight, BusFront, CarFront, CircleDollarSign, MapPin, Play, Route as RouteIcon, UsersRound } from 'lucide-react-native'
 import { LiveRouteMap } from '../components/LiveRouteMap'
 import { useDriverLocation } from '../hooks/useDriverLocation'
 import { supabase } from '../lib/supabase'
@@ -86,6 +86,7 @@ export function DriverDashboard({ profile, routes, loading, onRefresh }: Props) 
 
       {routes.map((route) => {
         const passengers = route.bookings?.filter((booking) => booking.status !== 'cancelled').length ?? 0
+        const VehicleIcon = route.vehicle_type === 'van' ? BusFront : CarFront
         return (
           <View key={route.id} style={[styles.routeCard, route.id === trackingRouteId && styles.routeCardActive]}>
             <View style={styles.routeTop}>
@@ -97,7 +98,7 @@ export function DriverDashboard({ profile, routes, loading, onRefresh }: Props) 
             </View>
             <View style={styles.routeInfo}>
               <View style={styles.info}><UsersRound size={16} color={colors.textMuted} /><Text style={styles.infoText}>{passengers}/{route.total_seats}</Text></View>
-              <View style={styles.info}><CarFront size={16} color={colors.textMuted} /><Text style={styles.infoText}>{route.vehicle_model ?? profile.vehicle_model ?? 'Veículo'}</Text></View>
+              <View style={styles.info}><VehicleIcon size={16} color={colors.textMuted} /><Text style={styles.infoText}>{route.vehicle_model ?? profile.vehicle_model ?? 'Veículo'}{route.vehicle_capacity ? ` · ${route.vehicle_capacity} lugares` : ''}</Text></View>
               <View style={styles.info}><MapPin size={16} color={colors.textMuted} /><Text style={styles.infoText}>{short(route.destination_address)}</Text></View>
             </View>
             <View style={styles.actions}>

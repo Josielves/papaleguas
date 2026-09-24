@@ -1,4 +1,4 @@
-import { CarFront, Star } from 'lucide-react'
+import { BusFront, CarFront, Star } from 'lucide-react'
 import { getPrice, getRegionName } from '../lib/supabase'
 import { formatDeparture, formatPrice, initials } from '../lib/format'
 import RouteMap from './RouteMap'
@@ -7,7 +7,8 @@ export default function RouteDetails({ route, onReserve, onWaitlist }) {
   const availableSeats = route.seats?.filter(seat => seat.status === 'available').length ?? route.available_seats ?? 0
   const full = availableSeats === 0
   const driverName = route.driver?.name || 'Motorista'
-  const vehicle = [route.vehicle_model, route.vehicle_color].filter(Boolean).join(' - ') || 'Veículo não informado'
+  const vehicle = [route.vehicle_brand, route.vehicle_model, route.vehicle_color].filter(Boolean).join(' - ') || 'Veículo não informado'
+  const VehicleIcon = route.vehicle_type === 'van' ? BusFront : CarFront
   const rating = Number(route.driver?.rating_average)
   const hasRating = Number.isFinite(rating) && rating > 0
 
@@ -47,11 +48,11 @@ export default function RouteDetails({ route, onReserve, onWaitlist }) {
 
         <section className="route-detail__facts" aria-label="Informações da viagem">
           <div className="route-detail__fact">
-            <span className="route-detail__fact-icon" aria-hidden="true"><CarFront size={20} /></span>
+            <span className="route-detail__fact-icon" aria-hidden="true"><VehicleIcon size={20} /></span>
             <div>
-              <small>Veículo</small>
+              <small>{route.vehicle_type === 'van' ? 'Van' : 'Veículo'}</small>
               <strong>{vehicle}</strong>
-              {route.vehicle_plate && <span>Placa {route.vehicle_plate}</span>}
+              {route.vehicle_plate && <span>Placa {route.vehicle_plate}{route.vehicle_capacity ? ` · ${route.vehicle_capacity} passageiros` : ''}</span>}
             </div>
           </div>
 

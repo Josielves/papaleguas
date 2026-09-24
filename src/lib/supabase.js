@@ -24,6 +24,28 @@ export function getPrice(originRegion, destinationRegion) {
   return originRegion === 'centro' || destinationRegion === 'centro' ? 10 : 15
 }
 
+export function normalizeVehiclePlate(value) {
+  return String(value ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7)
+}
+
+export function isValidVehiclePlate(value) {
+  return /^[A-Z]{3}(?:[0-9]{4}|[0-9][A-Z][0-9]{2})$/.test(normalizeVehiclePlate(value))
+}
+
+export async function lookupVehicleByPlate(value) {
+  const plate = normalizeVehiclePlate(value)
+  if (!isValidVehiclePlate(plate)) {
+    return { data: null, error: new Error('Informe uma placa antiga ou Mercosul valida.') }
+  }
+
+  const { data, error } = await supabase.functions.invoke('vehicle-lookup', {
+    body: { plate },
+  })
+  if (error) return { data: null, error }
+  if (data?.error) return { data: null, error: new Error(data.error) }
+  return { data, error: null }
+}
+
 export function signIn({ email, password }) {
   return supabase.auth.signInWithPassword({ email, password })
 }
@@ -210,9 +232,15 @@ export function updateProfile(userId, profile) {
       name: profile.name,
       phone: profile.phone || null,
       address: profile.address || null,
+      vehicle_brand: profile.vehicleBrand || null,
       vehicle_model: profile.vehicleModel || null,
-      vehicle_plate: profile.vehiclePlate?.toUpperCase() || null,
+      vehicle_plate: normalizeVehiclePlate(profile.vehiclePlate) || null,
       vehicle_color: profile.vehicleColor || null,
+      vehicle_year: profile.vehicleYear || null,
+      vehicle_model_year: profile.vehicleModelYear || null,
+      vehicle_type: profile.vehicleType || 'car',
+      vehicle_capacity: Number(profile.vehicleCapacity) || 6,
+      vehicle_lookup_verified_at: profile.vehicleLookupVerifiedAt || null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId)

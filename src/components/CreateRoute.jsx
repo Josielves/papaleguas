@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MapPin } from 'lucide-react'
+import { BusFront, CarFront, MapPin } from 'lucide-react'
 import {
   REGIONS,
   getPrice,
@@ -29,6 +29,8 @@ const emptyForm = {
   departureDate: '',
   departureTime: '',
   totalSeats: 4,
+  vehicleType: 'car',
+  vehicleCapacity: 6,
   vehicleModel: '',
   vehiclePlate: '',
   notes: '',
@@ -38,6 +40,9 @@ export default function CreateRoute({ user, onCreated, onError, onSuccess }) {
   const [step, setStep] = useState(1)
   const [form, setForm] = useState(() => ({
     ...emptyForm,
+    totalSeats: Math.min(4, Number(user.vehicle_capacity) || 6),
+    vehicleType: user.vehicle_type ?? 'car',
+    vehicleCapacity: Number(user.vehicle_capacity) || 6,
     vehicleModel: user.vehicle_model ?? '',
     vehiclePlate: user.vehicle_plate ?? '',
   }))
@@ -84,6 +89,14 @@ export default function CreateRoute({ user, onCreated, onError, onSuccess }) {
   }
 
   async function handleSubmit() {
+    if (!form.vehicleModel || !form.vehiclePlate) {
+      onError?.('Cadastre o veículo e consulte a placa no seu perfil antes de publicar a rota.')
+      return
+    }
+    if (Number(form.totalSeats) > Number(form.vehicleCapacity)) {
+      onError?.('A quantidade de assentos excede a capacidade cadastrada do veículo.')
+      return
+    }
     if (!form.departureDate || !form.departureTime) {
       onError?.('Informe data e horário de saída.')
       return
@@ -115,13 +128,16 @@ export default function CreateRoute({ user, onCreated, onError, onSuccess }) {
       onSuccess?.('Rota criada com sucesso! 🚗')
       setForm({
         ...emptyForm,
+        totalSeats: Math.min(4, Number(user.vehicle_capacity) || 6),
+        vehicleType: user.vehicle_type ?? 'car',
+        vehicleCapacity: Number(user.vehicle_capacity) || 6,
         vehicleModel: user.vehicle_model ?? '',
         vehiclePlate: user.vehicle_plate ?? '',
       })
       setStep(1)
       onCreated?.()
     } catch (err) {
-      onError?.('Não foi possível criar a rota. Tente novamente.')
+      onError?.(err?.message || 'Não foi possível criar a rota. Tente novamente.')
     } finally {
       setSubmitting(false)
     }
@@ -248,20 +264,29 @@ export default function CreateRoute({ user, onCreated, onError, onSuccess }) {
           <div style={{ marginBottom: '0.875rem' }}>
             <label className="field-label" htmlFor="seats">Assentos disponíveis</label>
             <select id="seats" className="select" value={form.totalSeats} onChange={(e) => update({ totalSeats: e.target.value })}>
-              {[2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} assentos</option>)}
+              {Array.from({ length: Number(form.vehicleCapacity) || 1 }, (_, index) => index + 1).map(n => (
+                <option key={n} value={n}>{n} {n === 1 ? 'assento' : 'assentos'}</option>
+              ))}
             </select>
+            <p style={{ fontSize: '0.75rem', marginTop: '0.375rem' }}>Limite do veículo: {form.vehicleCapacity} passageiros.</p>
+          </div>
+
+          <div className="route-vehicle-summary" style={{ marginBottom: '0.875rem' }}>
+            {form.vehicleType === 'van' ? <BusFront size={20} aria-hidden="true" /> : <CarFront size={20} aria-hidden="true" />}
+            <div>
+              <strong>{form.vehicleType === 'van' ? 'Van' : 'Carro'} · {form.vehicleModel || 'Veículo não cadastrado'}</strong>
+              <span>{form.vehiclePlate || 'Placa não cadastrada'} · capacidade para {form.vehicleCapacity} passageiros</span>
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem', marginBottom: '0.875rem' }}>
             <div>
               <label className="field-label" htmlFor="model">Modelo do veículo</label>
-              <input id="model" className="input" placeholder="Ex: Onix Prata" value={form.vehicleModel}
-                onChange={(e) => update({ vehicleModel: e.target.value })} />
+              <input id="model" className="input" value={form.vehicleModel} readOnly />
             </div>
             <div>
               <label className="field-label" htmlFor="plate">Placa</label>
-              <input id="plate" className="input" placeholder="ABC1D23" value={form.vehiclePlate}
-                onChange={(e) => update({ vehiclePlate: e.target.value.toUpperCase() })} />
+              <input id="plate" className="input" value={form.vehiclePlate} readOnly />
             </div>
           </div>
 

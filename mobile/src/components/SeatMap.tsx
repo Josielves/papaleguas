@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Armchair, CarFront } from 'lucide-react-native'
+import { Armchair, BusFront, CarFront } from 'lucide-react-native'
 import { colors, radius } from '../theme'
 import type { Seat } from '../types'
 
@@ -7,15 +7,17 @@ type Props = {
   seats: Seat[]
   selected: number | null
   onSelect: (seatNumber: number) => void
+  vehicleType?: 'car' | 'van'
 }
 
-export function SeatMap({ seats, selected, onSelect }: Props) {
+export function SeatMap({ seats, selected, onSelect, vehicleType = 'car' }: Props) {
+  const VehicleIcon = vehicleType === 'van' ? BusFront : CarFront
   return (
     <View>
-      <View style={styles.vehicle}>
+      <View style={[styles.vehicle, vehicleType === 'van' && styles.van]}>
         <View style={styles.windshield}>
-          <CarFront size={22} color={colors.primary} />
-          <Text style={styles.vehicleLabel}>VISÃO DO VEÍCULO</Text>
+          <VehicleIcon size={22} color={colors.primary} />
+          <Text style={styles.vehicleLabel}>{vehicleType === 'van' ? 'VISÃO DA VAN' : 'VISÃO DO VEÍCULO'}</Text>
         </View>
         <View style={styles.aisle} />
         <View style={styles.grid}>
@@ -67,6 +69,7 @@ const styles = StyleSheet.create({
     paddingBottom: 26,
     backgroundColor: colors.surfaceMuted,
   },
+  van: { width: 250, borderRadius: 24 },
   windshield: { alignItems: 'center', gap: 5, paddingBottom: 17, borderBottomWidth: 1, borderBottomColor: colors.line },
   vehicleLabel: { color: colors.textMuted, fontSize: 10, fontWeight: '800', letterSpacing: 0 },
   aisle: { position: 'absolute', top: 82, bottom: 22, left: '50%', width: 1, backgroundColor: colors.line },
