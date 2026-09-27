@@ -3,7 +3,7 @@ import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 import { BadgeCheck, BusFront, CarFront, LogOut, Mail, Phone, Save, Search, UserRound } from 'lucide-react-native'
 import { supabase } from '../lib/supabase'
 import { isValidVehiclePlate, lookupVehicleByPlate, normalizeVehiclePlate } from '../services/vehicleLookup'
-import { colors, radius, shadow } from '../theme'
+import { colors, fonts, radius, shadow } from '../theme'
 import type { AppRole, Profile } from '../types'
 
 type Props = {
@@ -167,7 +167,7 @@ export function ProfileScreen({ profile, role, onRoleChange, onProfileChange }: 
                 placeholderTextColor={colors.textMuted}
               />
               <Pressable style={styles.lookupButton} onPress={lookupVehicle} disabled={lookingUp} accessibilityLabel="Consultar placa">
-                <Search size={19} color="#FFFFFF" />
+                <Search size={19} color={colors.text} />
                 <Text style={styles.lookupText}>{lookingUp ? 'Buscando' : 'Consultar'}</Text>
               </Pressable>
             </View>
@@ -193,7 +193,7 @@ export function ProfileScreen({ profile, role, onRoleChange, onProfileChange }: 
         </View>
       )}
 
-      <Pressable style={styles.save} onPress={save} disabled={busy || lookingUp}><Save size={18} color="#FFFFFF" /><Text style={styles.saveText}>{busy ? 'Salvando...' : 'Salvar alterações'}</Text></Pressable>
+      <Pressable style={styles.save} onPress={save} disabled={busy || lookingUp}><Save size={18} color={colors.text} /><Text style={styles.saveText}>{busy ? 'Salvando...' : 'Salvar alterações'}</Text></Pressable>
 
       {supabase && profile.id !== 'demo-user' && (
         <Pressable style={styles.logout} onPress={() => supabase?.auth.signOut()}><LogOut size={18} color={colors.coral} /><Text style={styles.logoutText}>Sair da conta</Text></Pressable>
@@ -223,41 +223,41 @@ function VehicleTypeButton({ type, active, onPress }: { type: 'car' | 'van'; act
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background },
   content: { padding: 18, paddingBottom: 110, gap: 14 },
-  title: { color: colors.text, fontSize: 28, fontWeight: '900' },
-  subtitle: { color: colors.textMuted, fontSize: 14 },
+  title: { color: colors.text, fontSize: 28, fontFamily: fonts.extraBold },
+  subtitle: { color: colors.textMuted, fontSize: 14, fontFamily: fonts.regular },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface, ...shadow },
   avatar: { width: 64, height: 64, borderRadius: 32 },
   avatarFallback: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.blueSoft },
-  name: { color: colors.text, fontSize: 19, fontWeight: '900' },
-  role: { marginTop: 3, color: colors.primary, fontSize: 13, fontWeight: '800' },
+  name: { color: colors.text, fontSize: 19, fontFamily: fonts.extraBold },
+  role: { marginTop: 3, color: colors.primaryDark, fontSize: 13, fontFamily: fonts.bold },
   segmented: { flexDirection: 'row', padding: 4, borderRadius: radius.medium, backgroundColor: colors.surfaceMuted },
   mode: { flex: 1, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 6 },
   modeActive: { backgroundColor: colors.surface, ...shadow },
-  modeText: { color: colors.textMuted, fontWeight: '800' },
+  modeText: { color: colors.textMuted, fontFamily: fonts.bold },
   modeTextActive: { color: colors.primaryDark },
   form: { gap: 13, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface },
   field: { gap: 7 },
   fieldLabel: { minHeight: 18, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  label: { color: colors.text, fontSize: 12, fontWeight: '800' },
-  input: { height: 47, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.line, borderRadius: radius.medium, color: colors.text, backgroundColor: colors.background },
+  label: { color: colors.text, fontSize: 12, fontFamily: fonts.bold },
+  input: { height: 47, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.line, borderRadius: radius.medium, color: colors.text, backgroundColor: colors.background, fontFamily: fonts.regular },
   inputDisabled: { color: colors.textMuted, backgroundColor: colors.surfaceMuted },
   vehicleHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  vehicleTitle: { color: colors.text, fontSize: 17, fontWeight: '900' },
+  vehicleTitle: { color: colors.text, fontSize: 17, fontFamily: fonts.extraBold },
   vehicleCaption: { marginTop: 2, color: colors.textMuted, fontSize: 12 },
   lookupRow: { flexDirection: 'row', gap: 8 },
   lookupInput: { flex: 1 },
-  lookupButton: { minWidth: 112, height: 47, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: radius.medium, backgroundColor: colors.primary },
-  lookupText: { color: '#FFFFFF', fontSize: 12, fontWeight: '900' },
+  lookupButton: { minWidth: 112, height: 47, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 999, backgroundColor: colors.primary },
+  lookupText: { color: colors.text, fontSize: 12, fontFamily: fonts.extraBold },
   vehicleTypes: { flexDirection: 'row', gap: 8 },
   vehicleType: { flex: 1, minHeight: 62, flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderWidth: 1, borderColor: colors.line, borderRadius: radius.medium, backgroundColor: colors.background },
-  vehicleTypeActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
-  vehicleTypeTitle: { color: colors.textMuted, fontSize: 13, fontWeight: '900' },
+  vehicleTypeActive: { borderColor: colors.primaryHover, backgroundColor: colors.primarySoft },
+  vehicleTypeTitle: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.extraBold },
   vehicleTypeTitleActive: { color: colors.primaryDark },
   vehicleTypeCaption: { color: colors.textMuted, fontSize: 9 },
   twoColumns: { flexDirection: 'row', gap: 9 },
   hint: { color: colors.textMuted, fontSize: 11, lineHeight: 16 },
-  save: { height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: radius.medium, backgroundColor: colors.primary },
-  saveText: { color: '#FFFFFF', fontWeight: '900' },
+  save: { height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 999, backgroundColor: colors.primary },
+  saveText: { color: colors.text, fontFamily: fonts.extraBold },
   logout: { height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1, borderColor: '#FECDD3', borderRadius: radius.medium, backgroundColor: '#FFF1F2' },
   logoutText: { color: colors.coral, fontWeight: '900' },
 })

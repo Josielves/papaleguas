@@ -5,11 +5,13 @@ import sharp from 'sharp'
 const root = process.cwd()
 const outputDir = path.join(root, 'assets')
 const mobileDir = path.join(root, 'mobile', 'assets')
+const publicDir = path.join(root, 'public')
 const mark = await readFile(path.join(root, 'branding', 'papaleguas-blue-roadrunner.png'))
 
 await Promise.all([
   mkdir(outputDir, { recursive: true }),
   mkdir(mobileDir, { recursive: true }),
+  mkdir(publicDir, { recursive: true }),
 ])
 
 async function resizedMark(size) {
@@ -58,7 +60,7 @@ async function whiteSilhouette(size, overlaySize) {
     .toBuffer()
 }
 
-const light = { r: 248, g: 250, b: 252, alpha: 1 }
+const light = { r: 247, g: 251, b: 239, alpha: 1 }
 const transparent = { r: 0, g: 0, b: 0, alpha: 0 }
 
 const icon = await squareCanvas(1024, light, 860)
@@ -82,6 +84,7 @@ await Promise.all([
   sharp(notification).toFile(path.join(mobileDir, 'notification-icon.png')),
   sharp(splash).toFile(path.join(mobileDir, 'splash-icon.png')),
   sharp(icon).resize(96, 96).toFile(path.join(mobileDir, 'favicon.png')),
+  sharp(icon).resize(192, 192).toFile(path.join(publicDir, 'papaleguas-favicon.png')),
 ])
 
 console.log(`Assets oficiais gerados em ${outputDir} e ${mobileDir}`)

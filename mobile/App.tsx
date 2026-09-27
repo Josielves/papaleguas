@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
+import {
+  BricolageGrotesque_400Regular,
+  BricolageGrotesque_500Medium,
+  BricolageGrotesque_600SemiBold,
+  BricolageGrotesque_700Bold,
+  BricolageGrotesque_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/bricolage-grotesque'
 import type { Session } from '@supabase/supabase-js'
 import { Bell, CalendarCheck, Home, MessageCircle, Route as RouteIcon, UserRound } from 'lucide-react-native'
 import { Brand } from './src/components/Brand'
@@ -13,12 +21,19 @@ import { DriverDashboard } from './src/screens/DriverDashboard'
 import { PassengerHome } from './src/screens/PassengerHome'
 import { ProfileScreen } from './src/screens/ProfileScreen'
 import { RouteDetails } from './src/screens/RouteDetails'
-import { colors, shadow } from './src/theme'
+import { colors, fonts, shadow } from './src/theme'
 import type { AppNotification, AppRole, Profile, Route } from './src/types'
 
 type Tab = 'home' | 'routes' | 'messages' | 'profile'
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    BricolageGrotesque_400Regular,
+    BricolageGrotesque_500Medium,
+    BricolageGrotesque_600SemiBold,
+    BricolageGrotesque_700Bold,
+    BricolageGrotesque_800ExtraBold,
+  })
   const [session, setSession] = useState<Session | null>(null)
   const [authLoading, setAuthLoading] = useState(isSupabaseConfigured)
   const [profile, setProfile] = useState<Profile>(demoProfile)
@@ -137,7 +152,7 @@ export default function App() {
         { id: 'profile' as const, label: 'Perfil', icon: UserRound },
       ], [role])
 
-  if (authLoading) {
+  if (authLoading || !fontsLoaded) {
     return <View style={styles.loading}><ActivityIndicator size="large" color={colors.primary} /><Text style={styles.loadingText}>Preparando suas rotas...</Text></View>
   }
   if (isSupabaseConfigured && !session) return <AuthScreen />
@@ -171,8 +186,8 @@ export default function App() {
             const active = tab === item.id
             const Icon = item.icon
             return (
-              <Pressable key={item.id} style={styles.navItem} onPress={() => setTab(item.id)}>
-                <Icon size={21} color={active ? colors.primary : colors.textMuted} strokeWidth={active ? 2.7 : 2} />
+              <Pressable key={item.id} style={[styles.navItem, active && styles.navItemActive]} onPress={() => setTab(item.id)}>
+                <Icon size={21} color={active ? colors.text : colors.textMuted} strokeWidth={active ? 2.7 : 2} />
                 <Text style={[styles.navText, active && styles.navTextActive]}>{item.label}</Text>
               </Pressable>
             )
@@ -212,20 +227,21 @@ function MessagesView() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.surface },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: colors.background },
-  loadingText: { color: colors.textMuted, fontWeight: '700' },
+  loadingText: { color: colors.textMuted, fontFamily: fonts.bold },
   header: { height: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: colors.line, backgroundColor: colors.surface },
   bell: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: colors.surfaceMuted },
   badge: { position: 'absolute', top: 3, right: 3, minWidth: 17, height: 17, paddingHorizontal: 3, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: colors.coral },
-  badgeText: { color: '#FFFFFF', fontSize: 9, fontWeight: '900' },
+  badgeText: { color: '#FFFFFF', fontSize: 9, fontFamily: fonts.extraBold },
   main: { flex: 1, backgroundColor: colors.background },
   bottomNav: { height: 72, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.surface, ...shadow },
   navItem: { flex: 1, height: 58, alignItems: 'center', justifyContent: 'center', gap: 4 },
-  navText: { color: colors.textMuted, fontSize: 10, fontWeight: '700' },
-  navTextActive: { color: colors.primaryDark, fontWeight: '900' },
+  navItemActive: { marginVertical: 7, borderRadius: 16, backgroundColor: colors.primary },
+  navText: { color: colors.textMuted, fontSize: 10, fontFamily: fonts.bold },
+  navTextActive: { color: colors.primaryDark, fontFamily: fonts.extraBold },
   placeholder: { flex: 1, padding: 18, gap: 12, backgroundColor: colors.background },
-  placeholderTitle: { color: colors.text, fontSize: 28, fontWeight: '900' },
-  placeholderText: { color: colors.textMuted, lineHeight: 20 },
-  placeholderCard: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 11, padding: 14, borderWidth: 1, borderColor: colors.line, borderRadius: 8, backgroundColor: colors.surface },
-  cardTitle: { color: colors.text, fontWeight: '800' },
-  cardText: { color: colors.textMuted, fontSize: 12 },
+  placeholderTitle: { color: colors.text, fontSize: 28, fontFamily: fonts.extraBold },
+  placeholderText: { color: colors.textMuted, lineHeight: 20, fontFamily: fonts.regular },
+  placeholderCard: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 11, padding: 14, borderWidth: 1, borderColor: colors.line, borderRadius: 16, backgroundColor: colors.surface },
+  cardTitle: { color: colors.text, fontFamily: fonts.extraBold },
+  cardText: { color: colors.textMuted, fontSize: 12, fontFamily: fonts.regular },
 })

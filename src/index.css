@@ -3,30 +3,35 @@
 @tailwind utilities;
 
 /* =========================================================================
-   PAPALEGUAS — Design System
-   Conceito: "a rota é a interface". O acostamento (faixa amarela tracejada)
-   é o elemento assinatura — conecta cards, passos do formulário e divide
-   seções, como uma linha de rota vista de cima.
+   PAPA-LEGUAS - identidade oficial
+   Lima para acao, preto para hierarquia, creme para as superficies e azul
+   reservado para a mascote e elementos de orientacao.
    ========================================================================= */
 
 :root {
-  /* Superfícies claras */
-  --ink-950: #f8fafc;
+  --brand-lime: #c4ff00;
+  --brand-lime-dark: #a9e000;
+  --brand-ink: #0b0f08;
+  --brand-cream: #f7fbef;
+
+  /* Superficies claras */
+  --ink-950: #f7fbef;
   --ink-900: #ffffff;
-  --ink-800: #f1f5f9;
-  --ink-700: #e2e8f0;
-  --line-700: #dbe4ee;
-  --line-600: #c7d2df;
+  --ink-800: #f0f5e7;
+  --ink-700: #e6edda;
+  --line-700: #dce5cf;
+  --line-600: #c6d1b7;
 
-  /* Faixa amarela — ação primária / rota */
-  --amber-500: #f5a623;
-  --amber-400: #ffc24d;
-  --amber-950: #fff7df;
+  /* Acao primaria / rota */
+  --amber-500: #c4ff00;
+  --amber-400: #d5ff4d;
+  --amber-950: #f2ffd0;
 
-  /* Rota GPS — motorista / sucesso */
-  --teal-400: #0f9f93;
-  --teal-500: #0b8279;
-  --teal-950: #e2f8f5;
+  /* Compatibilidade com os componentes existentes */
+  --teal-400: #c4ff00;
+  --teal-500: #c4ff00;
+  --teal-600: #0b0f08;
+  --teal-950: #f2ffd0;
 
   /* Alerta / cancelamento */
   --coral-500: #e45445;
@@ -34,34 +39,26 @@
   --coral-950: #fff0ee;
 
   /* Texto */
-  --cream-100: #0f172a;
-  --mist-300: #334155;
-  --mist-400: #64748b;
-  --mist-600: #94a3b8;
+  --cream-100: #0b0f08;
+  --mist-300: #252c21;
+  --mist-400: #5e6958;
+  --mist-600: #899482;
 
   /* Tipografia */
-  --font-display: "Inter", system-ui, sans-serif;
-  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Bricolage Grotesque", system-ui, sans-serif;
+  --font-body: "Bricolage Grotesque Variable", "Bricolage Grotesque", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
   /* Ritmo */
-  --radius-sm: 8px;
-  --radius-md: 8px;
-  --radius-lg: 8px;
-  --shadow-elev: 0 16px 34px -22px rgba(15, 23, 42, 0.3);
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --shadow-elev: 0 16px 34px -22px rgba(11, 15, 8, 0.28);
   --dash: repeating-linear-gradient(
     90deg,
     var(--amber-500) 0 14px,
     transparent 14px 24px
   );
-}
-
-@font-face {
-  font-family: "Space Grotesk";
-  font-style: normal;
-  font-weight: 400 700;
-  font-display: swap;
-  src: local("Space Grotesk");
 }
 
 /* -------------------------------------------------------------------------
@@ -77,7 +74,7 @@
   }
 
   body {
-    background: #f8fafc;
+    background: var(--brand-cream);
     color: var(--cream-100);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
@@ -90,9 +87,9 @@
     color: var(--cream-100);
   }
 
-  h1 { font-size: 2.5rem; font-weight: 700; }
-  h2 { font-size: 1.875rem; font-weight: 700; }
-  h3 { font-size: 1.125rem; font-weight: 600; }
+  h1 { font-size: 2.5rem; font-weight: 800; }
+  h2 { font-size: 1.875rem; font-weight: 800; }
+  h3 { font-size: 1.125rem; font-weight: 700; }
 
   p, span, label, li { color: var(--mist-300); }
 
@@ -178,7 +175,7 @@
   .brand,
   .brand-lockup {
     font-family: var(--font-display);
-    font-weight: 700;
+    font-weight: 800;
     font-size: 1.25rem;
     display: flex;
     align-items: center;
@@ -296,7 +293,7 @@
   .nav-tab:hover { color: var(--cream-100); }
   .nav-tab.is-active {
     background: var(--teal-500);
-    color: #ffffff;
+    color: var(--brand-ink);
   }
 }
 
@@ -312,7 +309,7 @@
     font-weight: 600;
     font-size: 0.9375rem;
     padding: 0.6875rem 1.25rem;
-    border-radius: var(--radius-sm);
+    border-radius: 999px;
     transition: transform 0.12s ease, background-color 0.15s ease, box-shadow 0.15s ease;
     white-space: nowrap;
   }
@@ -321,10 +318,10 @@
 
   .btn-primary {
     background: var(--teal-500);
-    color: #ffffff;
-    box-shadow: 0 8px 20px -10px rgba(11, 130, 121, 0.5);
+    color: var(--brand-ink);
+    box-shadow: 0 8px 20px -10px rgba(11, 15, 8, 0.35);
   }
-  .btn-primary:hover { background: #086d66; }
+  .btn-primary:hover { background: var(--brand-lime-dark); }
 
   .btn-secondary {
     background: var(--ink-800);
@@ -1120,7 +1117,7 @@
   .bubble--mine {
     align-self: flex-end;
     background: var(--teal-500);
-    color: #ffffff;
+    color: var(--brand-ink);
     border-bottom-right-radius: 4px;
   }
   .bubble--theirs {
@@ -1585,11 +1582,11 @@ input[type="datetime-local"] {
     width: 100%;
     min-height: 3rem;
     background: var(--teal-500);
-    color: #ffffff;
-    box-shadow: 0 8px 20px -10px rgba(11, 130, 121, 0.5);
+    color: var(--brand-ink);
+    box-shadow: 0 8px 20px -10px rgba(11, 15, 8, 0.35);
   }
 
-  .passenger-search__submit:hover { background: #086d66; }
+  .passenger-search__submit:hover { background: var(--brand-lime-dark); }
 
   .nearby-button,
   .map-toggle {
@@ -2342,7 +2339,6 @@ input[type="datetime-local"] {
 
   .driver-sidebar__top .brand-lockup__name {
     font-size: 0.9rem;
-    text-transform: uppercase;
   }
 
   .driver-sidebar__top .roadbird-mark {
@@ -2385,7 +2381,7 @@ input[type="datetime-local"] {
   }
 
   .driver-sidebar__nav button.is-active {
-    border-color: rgba(15, 159, 147, 0.28);
+    border-color: rgba(11, 15, 8, 0.18);
     background: var(--teal-950);
     color: var(--teal-600);
   }
@@ -2905,6 +2901,7 @@ input[type="datetime-local"] {
   .app-header__inner { padding: 0.625rem 0.75rem; }
   .app-header__inner > div { gap: 0.35rem !important; }
   .brand-lockup__name { display: none; }
+  .auth-shell .brand-lockup__name { display: inline; }
   .app-header .header-user { display: none; }
   .app-header .btn-ghost { padding-inline: 0.625rem; }
   .driver-console__header { align-items: stretch; flex-direction: column; }
@@ -2986,7 +2983,7 @@ input[type="datetime-local"] {
     flex-shrink: 0;
   }
   .toast--error { border-color: rgba(255, 107, 91, 0.4); color: var(--coral-400); }
-  .toast--success { border-color: rgba(45, 217, 181, 0.4); color: var(--teal-400); }
+  .toast--success { border-color: rgba(169, 224, 0, 0.65); color: var(--brand-ink); }
 
   .tag {
     display: inline-flex;

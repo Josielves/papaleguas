@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { MapPin } from 'lucide-react'
+import { Armchair, Clock3, Mail, Map, MapPin, MessageCircle, Ticket } from 'lucide-react'
 import {
   getMyBookings,
   getMyWaitlist,
@@ -126,8 +126,8 @@ export default function MyBookings({ user, onError, onSuccess }) {
                 </div>
 
                 <div className="route-card__meta">
-                  <span>🕒 {formatDateTime(b.route?.departure_time)}</span>
-                  <span>💺 Assento #{b.seat_number}</span>
+                  <span><Clock3 size={14} /> {formatDateTime(b.route?.departure_time)}</span>
+                  <span><Armchair size={14} /> Assento #{b.seat_number}</span>
                 </div>
 
                 {b.pickup_address && (
@@ -136,7 +136,7 @@ export default function MyBookings({ user, onError, onSuccess }) {
 
                 {b.is_for_someone_else && (
                   <p style={{ marginTop: '0.375rem', fontSize: '0.8125rem' }}>
-                    🎟️ Reservado para <strong style={{ color: 'var(--cream-100)' }}>{b.recipient_name}</strong>
+                    <Ticket size={14} style={{ display: 'inline', verticalAlign: '-2px', marginRight: '0.25rem' }} />Reservado para <strong style={{ color: 'var(--cream-100)' }}>{b.recipient_name}</strong>
                     {b.recipient_phone ? ` · ${b.recipient_phone}` : ''}
                   </p>
                 )}
@@ -156,7 +156,7 @@ export default function MyBookings({ user, onError, onSuccess }) {
                     </div>
                     {b.status !== 'cancelled' && whatsAppLink(b.route.driver.phone) && (
                       <a className="btn btn-secondary btn-icon" href={whatsAppLink(b.route.driver.phone, 'Oi! Sou seu passageiro na Papaleguas.')} target="_blank" rel="noreferrer" title="Chamar no WhatsApp">
-                        💬
+                        <MessageCircle size={17} />
                       </a>
                     )}
                   </div>
@@ -167,11 +167,11 @@ export default function MyBookings({ user, onError, onSuccess }) {
                 <span className="price-badge">{formatPrice(getPrice(b.route?.origin_region, b.route?.destination_region))}</span>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   {canTrack && (
-                    <button className="btn btn-secondary" onClick={() => setTracking(b)}>🗺️ Acompanhar</button>
+                    <button className="btn btn-secondary" onClick={() => setTracking(b)}><Map size={17} /> Acompanhar</button>
                   )}
                   {b.status !== 'cancelled' && (
                     <>
-                      <button className="btn btn-ghost btn-icon" onClick={() => setActiveChat(b)} aria-label="Abrir chat">✉</button>
+                      <button className="btn btn-ghost btn-icon" onClick={() => setActiveChat(b)} aria-label="Abrir chat"><Mail size={17} /></button>
                       <button
                         className="btn btn-danger"
                         onClick={() => handleCancel(b)}

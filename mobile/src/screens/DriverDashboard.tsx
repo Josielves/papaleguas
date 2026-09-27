@@ -4,7 +4,7 @@ import { ArrowRight, BusFront, CarFront, CircleDollarSign, MapPin, Play, Route a
 import { LiveRouteMap } from '../components/LiveRouteMap'
 import { useDriverLocation } from '../hooks/useDriverLocation'
 import { supabase } from '../lib/supabase'
-import { colors, radius, shadow } from '../theme'
+import { colors, fonts, radius, shadow } from '../theme'
 import type { Profile, Route } from '../types'
 
 type Props = {
@@ -107,7 +107,7 @@ export function DriverDashboard({ profile, routes, loading, onRefresh }: Props) 
               </Pressable>
               {route.id !== trackingRouteId && (
                 <Pressable style={styles.primary} onPress={() => startRoute(route)}>
-                  <Play size={17} color="#FFFFFF" fill="#FFFFFF" /><Text style={styles.primaryText}>Iniciar</Text>
+                  <Play size={17} color={colors.text} fill={colors.text} /><Text style={styles.primaryText}>Iniciar</Text>
                 </Pressable>
               )}
             </View>
@@ -142,16 +142,16 @@ const formatDate = (value: string) => new Date(value).toLocaleString('pt-BR', { 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background },
   content: { padding: 18, paddingBottom: 110, gap: 14 },
-  eyebrow: { color: colors.primary, fontSize: 11, fontWeight: '900', letterSpacing: 0 },
-  title: { color: colors.text, fontSize: 28, fontWeight: '900' },
-  subtitle: { color: colors.textMuted, fontSize: 14, lineHeight: 20 },
+  eyebrow: { color: colors.primaryDark, fontSize: 11, fontFamily: fonts.extraBold, letterSpacing: 0 },
+  title: { color: colors.text, fontSize: 28, fontFamily: fonts.extraBold },
+  subtitle: { color: colors.textMuted, fontSize: 14, lineHeight: 20, fontFamily: fonts.regular },
   metrics: { flexDirection: 'row', gap: 8 },
   metric: { flex: 1, minHeight: 104, justifyContent: 'space-between', padding: 12, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface, ...shadow },
-  metricValue: { color: colors.text, fontSize: 19, fontWeight: '900' },
-  metricLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700' },
+  metricValue: { color: colors.text, fontSize: 19, fontFamily: fonts.extraBold },
+  metricLabel: { color: colors.textMuted, fontSize: 11, fontFamily: fonts.bold },
   mapBlock: { gap: 11 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 5 },
-  sectionTitle: { color: colors.text, fontSize: 18, fontWeight: '900' },
+  sectionTitle: { color: colors.text, fontSize: 18, fontFamily: fonts.extraBold },
   sectionCaption: { color: colors.textMuted, fontSize: 12 },
   broadcast: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6, backgroundColor: colors.primarySoft },
   broadcastIdle: { backgroundColor: colors.surfaceMuted },
@@ -160,19 +160,19 @@ const styles = StyleSheet.create({
   broadcastText: { color: colors.text, fontSize: 10, fontWeight: '800' },
   error: { color: '#9F1239', fontSize: 12 },
   routeCard: { gap: 12, padding: 15, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface },
-  routeCardActive: { borderColor: colors.primary, backgroundColor: '#F0FDFA' },
+  routeCardActive: { borderColor: colors.primaryHover, backgroundColor: colors.primarySoft },
   routeTop: { flexDirection: 'row', gap: 10 },
-  routeTitle: { color: colors.text, fontSize: 16, fontWeight: '900' },
+  routeTitle: { color: colors.text, fontSize: 16, fontFamily: fonts.extraBold },
   routeTime: { marginTop: 4, color: colors.textMuted, fontSize: 12 },
-  status: { color: colors.primaryDark, fontSize: 9, fontWeight: '900' },
+  status: { color: colors.primaryDark, fontSize: 9, fontFamily: fonts.extraBold },
   routeInfo: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   info: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   infoText: { color: colors.textMuted, fontSize: 12 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, paddingTop: 11, borderTopWidth: 1, borderTopColor: colors.line },
-  secondary: { height: 41, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingHorizontal: 12, borderRadius: radius.medium, borderWidth: 1, borderColor: colors.primary },
-  secondaryText: { color: colors.primary, fontWeight: '800' },
-  primary: { height: 41, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, borderRadius: radius.medium, backgroundColor: colors.primary },
-  primaryText: { color: '#FFFFFF', fontWeight: '900' },
+  secondary: { height: 41, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: colors.primaryHover },
+  secondaryText: { color: colors.primaryDark, fontFamily: fonts.bold },
+  primary: { height: 41, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, borderRadius: 999, backgroundColor: colors.primary },
+  primaryText: { color: colors.text, fontFamily: fonts.extraBold },
   empty: { alignItems: 'center', gap: 8, padding: 28, borderRadius: radius.large, backgroundColor: colors.surface },
-  emptyTitle: { color: colors.text, fontWeight: '900' },
+  emptyTitle: { color: colors.text, fontFamily: fonts.extraBold },
 })

@@ -32,6 +32,20 @@ export function isValidVehiclePlate(value) {
   return /^[A-Z]{3}(?:[0-9]{4}|[0-9][A-Z][0-9]{2})$/.test(normalizeVehiclePlate(value))
 }
 
+async function getFunctionErrorMessage(error) {
+  const fallback = error?.message || 'Falha ao consultar a placa.'
+  const context = error?.context
+  if (!context || typeof context.json !== 'function') return fallback
+
+  try {
+    const response = typeof context.clone === 'function' ? context.clone() : context
+    const payload = await response.json()
+    return payload?.error || payload?.message || fallback
+  } catch {
+    return fallback
+  }
+}
+
 export async function lookupVehicleByPlate(value) {
   const plate = normalizeVehiclePlate(value)
   if (!isValidVehiclePlate(plate)) {
@@ -41,7 +55,10 @@ export async function lookupVehicleByPlate(value) {
   const { data, error } = await supabase.functions.invoke('vehicle-lookup', {
     body: { plate },
   })
-  if (error) return { data: null, error }
+  if (error) {
+    const message = await getFunctionErrorMessage(error)
+    return { data: null, error: new Error(message) }
+  }
   if (data?.error) return { data: null, error: new Error(data.error) }
   return { data, error: null }
 }

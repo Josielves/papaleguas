@@ -117,10 +117,19 @@ Deno.serve(async (request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const providerToken = Deno.env.get('VEHICLE_LOOKUP_API_TOKEN')
+    const provider = (Deno.env.get('VEHICLE_LOOKUP_PROVIDER') ?? 'fipeplaca').toLowerCase()
     const authorization = request.headers.get('Authorization') ?? ''
     if (!supabaseUrl || !serviceRoleKey) return response({ error: 'Servico nao configurado.' }, 500)
     if (!authorization.startsWith('Bearer ')) return response({ error: 'Autenticacao obrigatoria.' }, 401)
-    if (!providerToken) return response({ error: 'Consulta de placas ainda nao configurada.' }, 503)
+    if (!['fipeplaca', 'placafipe'].includes(provider)) {
+      return response({ error: 'Provedor de placas nao suportado.' }, 500)
+    }
+    if (!providerToken || /^(SUA[_ -]?CHAVE|SEU[_ -]?TOKEN)/i.test(providerToken)) {
+      return response({ error: 'Configure a chave real da API de placas no Supabase.' }, 503)
+    }
+    if (provider === 'fipeplaca' && !providerToken.startsWith('fp_live_')) {
+      return response({ error: 'A chave do FipePlaca deve comecar com fp_live_.' }, 503)
+    }
 
     const admin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -133,11 +142,6 @@ Deno.serve(async (request) => {
     const plate = normalizePlate(body?.plate)
     if (!validPlate(plate)) {
       return response({ error: 'Informe uma placa antiga ou Mercosul valida.' }, 400)
-    }
-
-    const provider = (Deno.env.get('VEHICLE_LOOKUP_PROVIDER') ?? 'fipeplaca').toLowerCase()
-    if (!['fipeplaca', 'placafipe'].includes(provider)) {
-      return response({ error: 'Provedor de placas nao suportado.' }, 500)
     }
 
     const plateHash = await sha256(plate)
@@ -170,11 +174,12 @@ Deno.serve(async (request) => {
     }
 
     if (!upstream.ok) {
+      console.error(`Falha no provedor de placas: provider=${provider} status=${upstream.status}`)
       if (upstream.status === 400) return response({ error: 'Placa invalida.' }, 400)
       if (upstream.status === 404) return response({ error: 'Placa nao encontrada.' }, 404)
-      if ([401, 402, 403].includes(upstream.status)) {
-        return response({ error: 'Servico de placas sem autorizacao ou saldo.' }, 503)
-      }
+      if (upstream.status === 401) return response({ error: 'Chave da API de placas invalida ou revogada.' }, 503)
+      if (upstream.status === 402) return response({ error: 'Saldo insuficiente na API de placas.' }, 503)
+      if (upstream.status === 403) return response({ error: 'A API de placas bloqueou o acesso desta funcao.' }, 503)
       return response({ error: 'Servico de placas indisponivel. Tente novamente.' }, 502)
     }
 

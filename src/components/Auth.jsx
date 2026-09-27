@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CarFront } from 'lucide-react'
+import { CarFront, UserRound } from 'lucide-react'
 import { signIn, signUp } from '../lib/supabase'
 import Logo from './Logo'
 
@@ -76,7 +76,7 @@ export default function Auth({ onAuthed }) {
                   className={`account-type-card ${accountType === 'passenger' ? 'is-selected' : ''}`}
                   onClick={() => setAccountType('passenger')}
                 >
-                  <h3 style={{ marginBottom: '0.25rem' }}>🧑 Pegar carona</h3>
+                  <h3 style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><UserRound size={19} /> Pegar carona</h3>
                   <p style={{ fontSize: '0.8125rem' }}>Reservar assento em rotas abertas</p>
                 </button>
                 <button

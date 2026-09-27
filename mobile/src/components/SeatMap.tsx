@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Armchair, BusFront, CarFront } from 'lucide-react-native'
-import { colors, radius } from '../theme'
+import { colors, fonts, radius } from '../theme'
 import type { Seat } from '../types'
 
 type Props = {
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   },
   van: { width: 250, borderRadius: 24 },
   windshield: { alignItems: 'center', gap: 5, paddingBottom: 17, borderBottomWidth: 1, borderBottomColor: colors.line },
-  vehicleLabel: { color: colors.textMuted, fontSize: 10, fontWeight: '800', letterSpacing: 0 },
+  vehicleLabel: { color: colors.textMuted, fontSize: 10, fontFamily: fonts.bold, letterSpacing: 0 },
   aisle: { position: 'absolute', top: 82, bottom: 22, left: '50%', width: 1, backgroundColor: colors.line },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 14, marginTop: 18 },
   seat: {
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: radius.medium,
     borderWidth: 1.5,
-    borderColor: colors.primary,
+    borderColor: colors.primaryHover,
     backgroundColor: colors.surface,
     flexDirection: 'row',
     alignItems: 'center',
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   },
   seatSelected: { backgroundColor: colors.blue, borderColor: colors.blue },
   seatOccupied: { backgroundColor: colors.occupied, borderColor: colors.occupied },
-  seatNumber: { color: colors.primary, fontWeight: '900' },
+  seatNumber: { color: colors.primaryDark, fontFamily: fonts.extraBold },
   seatNumberActive: { color: '#FFFFFF' },
   legend: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 14, marginTop: 14 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },

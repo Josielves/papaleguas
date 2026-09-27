@@ -4,7 +4,7 @@ import { ArrowLeft, BusFront, CarFront, MapPin, ShieldCheck, Star } from 'lucide
 import { LiveRouteMap } from '../components/LiveRouteMap'
 import { SeatMap } from '../components/SeatMap'
 import { supabase } from '../lib/supabase'
-import { colors, radius, shadow } from '../theme'
+import { colors, fonts, radius, shadow } from '../theme'
 import type { Profile, Route, Seat } from '../types'
 
 type Props = {
@@ -118,16 +118,16 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background },
   content: { padding: 18, paddingBottom: 120, gap: 14 },
   back: { alignSelf: 'flex-start', height: 42, flexDirection: 'row', alignItems: 'center', gap: 7 },
-  backText: { color: colors.text, fontWeight: '800' },
+  backText: { color: colors.text, fontFamily: fonts.bold },
   summary: { gap: 14, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface, ...shadow },
   pathRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  path: { color: colors.text, fontSize: 20, lineHeight: 25, fontWeight: '900' },
+  path: { color: colors.text, fontSize: 20, lineHeight: 25, fontFamily: fonts.extraBold },
   departure: { marginTop: 4, color: colors.textMuted, fontSize: 13 },
-  price: { color: colors.primaryDark, fontSize: 18, fontWeight: '900' },
+  price: { color: colors.primaryDark, fontSize: 18, fontFamily: fonts.extraBold },
   driverRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 13, borderTopWidth: 1, borderTopColor: colors.line },
   avatar: { width: 43, height: 43, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.blueSoft },
   avatarText: { color: colors.blue, fontWeight: '900', fontSize: 17 },
-  driver: { color: colors.text, fontWeight: '900' },
+  driver: { color: colors.text, fontFamily: fonts.extraBold },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   muted: { color: colors.textMuted, fontSize: 12 },
   rating: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -135,12 +135,12 @@ const styles = StyleSheet.create({
   safety: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 9, borderRadius: radius.small, backgroundColor: colors.primarySoft },
   safetyText: { color: colors.primaryDark, fontSize: 12, fontWeight: '800' },
   section: { gap: 13, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface },
-  sectionTitle: { color: colors.text, fontSize: 17, fontWeight: '900' },
-  input: { height: 48, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.line, borderRadius: radius.medium, color: colors.text, backgroundColor: colors.background },
+  sectionTitle: { color: colors.text, fontSize: 17, fontFamily: fonts.extraBold },
+  input: { height: 48, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.line, borderRadius: radius.medium, color: colors.text, backgroundColor: colors.background, fontFamily: fonts.regular },
   confirmBar: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 15, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface, ...shadow },
   confirmLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
-  confirmPrice: { color: colors.text, fontSize: 18, fontWeight: '900' },
-  confirm: { flex: 1, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: radius.medium, backgroundColor: colors.primary },
+  confirmPrice: { color: colors.text, fontSize: 18, fontFamily: fonts.extraBold },
+  confirm: { flex: 1, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.primary },
   confirmDisabled: { backgroundColor: '#94A3B8' },
-  confirmText: { color: '#FFFFFF', fontWeight: '900' },
+  confirmText: { color: colors.text, fontFamily: fonts.extraBold },
 })

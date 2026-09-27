@@ -5,6 +5,9 @@ dist/
 .env.local
 .env.*.local
 
+# Supabase CLI local state
+supabase/.temp/
+
 # Android / Capacitor
 android/.gradle/
 android/build/

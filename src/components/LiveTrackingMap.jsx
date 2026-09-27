@@ -1,21 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { CarFront, Flag, LocateFixed, MapPin, TriangleAlert } from 'lucide-react'
 import { getRouteLocation, subscribeToRouteLocation, supabase, distanceKm } from '../lib/supabase'
 import { MAP_ATTRIBUTION, MAP_TILE_URL } from '../lib/mapConfig'
 import 'leaflet/dist/leaflet.css'
 
-const icon = (emoji, bg) =>
+const icon = (Icon, bg, color = '#0b0f08') =>
   L.divIcon({
     className: '',
-    html: `<div style="width:2.25rem;height:2.25rem;border-radius:999px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:1.125rem;border:2px solid #fff;box-shadow:0 5px 14px rgba(15,23,42,.24)">${emoji}</div>`,
+    html: `<div style="width:2.25rem;height:2.25rem;border-radius:999px;background:${bg};color:${color};display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 5px 14px rgba(11,15,8,.24)">${renderToStaticMarkup(<Icon size={18} strokeWidth={2.5} />)}</div>`,
     iconSize: [36, 36],
     iconAnchor: [18, 18],
   })
 
-const driverIcon = icon('🚗', 'var(--amber-500, #f5a623)')
-const pickupIcon = icon('📍', 'var(--teal-400, #2dd9b5)')
-const destIcon = icon('🏁', 'var(--coral-500, #ff6b5b)')
+const driverIcon = icon(CarFront, '#c4ff00')
+const pickupIcon = icon(MapPin, '#0877d1', '#ffffff')
+const destIcon = icon(Flag, '#f25f5c', '#ffffff')
 
 function normalizePosition(lat, lng) {
   const latitude = Number(lat)
@@ -125,11 +127,11 @@ export default function LiveTrackingMap({ route, pickup }) {
       {driverPos && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.875rem', flexWrap: 'wrap' }}>
           {distToPickup !== null && (
-            <span className="tag">🚗 {distToPickup < 1 ? `${Math.round(distToPickup * 1000)} m` : `${distToPickup.toFixed(1)} km`} do embarque</span>
+            <span className="tag"><CarFront size={14} /> {distToPickup < 1 ? `${Math.round(distToPickup * 1000)} m` : `${distToPickup.toFixed(1)} km`} do embarque</span>
           )}
-          {stale && <span className="tag" style={{ color: 'var(--coral-400)' }}>⚠ Sinal desatualizado</span>}
+          {stale && <span className="tag" style={{ color: 'var(--coral-400)' }}><TriangleAlert size={14} /> Sinal desatualizado</span>}
           <button type="button" className="btn btn-ghost btn-small" onClick={() => setFitRequest(value => value + 1)}>
-            Reenquadrar mapa
+            <LocateFixed size={16} /> Reenquadrar mapa
           </button>
         </div>
       )}
@@ -158,7 +160,7 @@ export default function LiveTrackingMap({ route, pickup }) {
             </Marker>
           )}
           {points.filter(Boolean).length > 1 && (
-            <Polyline positions={points.filter(Boolean)} pathOptions={{ color: '#0f9f93', weight: 4, opacity: 0.75 }} />
+            <Polyline positions={points.filter(Boolean)} pathOptions={{ color: '#0877d1', weight: 4, opacity: 0.82 }} />
           )}
           <StableViewport
             points={points}

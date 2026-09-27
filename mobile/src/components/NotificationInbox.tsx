@@ -3,7 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { CheckCheck, X } from 'lucide-react-native'
 import { demoNotifications } from '../data/demo'
 import { supabase } from '../lib/supabase'
-import { colors, radius, shadow } from '../theme'
+import { colors, fonts, radius, shadow } from '../theme'
 import type { AppNotification } from '../types'
 import { Brand } from './Brand'
 
@@ -65,7 +65,7 @@ export function NotificationInbox({ visible, userId, incoming, onClose, onOpenRo
           <View style={styles.header}>
             <Brand compact />
             <View style={styles.headerCopy}>
-              <Text style={styles.eyebrow}>RECADOS DO PAPALEGUAS</Text>
+              <Text style={styles.eyebrow}>RECADOS DO PAPA-LÉGUAS</Text>
               <Text style={styles.title}>Notificações</Text>
             </View>
             <Pressable style={styles.close} onPress={onClose} accessibilityLabel="Fechar notificações">
@@ -108,8 +108,8 @@ const styles = StyleSheet.create({
   handle: { width: 42, height: 4, alignSelf: 'center', borderRadius: 2, marginTop: 9, backgroundColor: colors.line },
   header: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.line },
   headerCopy: { flex: 1, marginLeft: 9 },
-  eyebrow: { color: colors.primary, fontSize: 10, fontWeight: '900', letterSpacing: 0 },
-  title: { color: colors.text, fontSize: 21, fontWeight: '900' },
+  eyebrow: { color: colors.primaryDark, fontSize: 10, fontFamily: fonts.extraBold, letterSpacing: 0 },
+  title: { color: colors.text, fontSize: 21, fontFamily: fonts.extraBold },
   close: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radius.medium, backgroundColor: colors.surface },
   list: { gap: 9, paddingVertical: 14 },
   item: {
@@ -122,11 +122,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.medium,
     backgroundColor: colors.surface,
   },
-  itemUnread: { borderColor: '#A7E8DF', backgroundColor: '#F0FDFA' },
+  itemUnread: { borderColor: colors.primaryHover, backgroundColor: colors.primarySoft },
   dot: { width: 9, height: 9, marginTop: 5, borderRadius: 5, backgroundColor: colors.primary },
   dotRead: { backgroundColor: colors.line },
   itemCopy: { flex: 1, gap: 3 },
-  itemTitle: { color: colors.text, fontWeight: '800', fontSize: 14 },
+  itemTitle: { color: colors.text, fontFamily: fonts.bold, fontSize: 14 },
   itemMessage: { color: colors.textMuted, lineHeight: 19, fontSize: 13 },
   time: { color: colors.textMuted, marginTop: 4, fontSize: 11 },
   empty: { color: colors.textMuted, padding: 30, textAlign: 'center' },

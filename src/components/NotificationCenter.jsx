@@ -63,7 +63,7 @@ export default function NotificationCenter({ user, onNotice }) {
           <div className="notification-menu__header">
             <Logo compact />
             <div>
-              <p className="eyebrow">Recados do Papaleguas</p>
+              <p className="eyebrow">Recados do Papa-léguas</p>
               <h3>Notificações</h3>
             </div>
             <span className="tag">{unread} novas</span>

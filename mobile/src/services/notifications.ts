@@ -21,7 +21,7 @@ export async function registerDeviceForNotifications(userId: string) {
       name: 'Viagens e reservas',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 180, 90, 180],
-      lightColor: '#0F9F93',
+      lightColor: '#C4FF00',
       sound: 'default',
     })
   }

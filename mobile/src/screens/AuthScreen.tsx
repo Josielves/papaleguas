@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, St
 import { CarFront, UserRound } from 'lucide-react-native'
 import { Brand } from '../components/Brand'
 import { supabase } from '../lib/supabase'
-import { colors, radius, shadow } from '../theme'
+import { colors, fonts, radius, shadow } from '../theme'
 import type { AppRole } from '../types'
 
 export function AuthScreen() {
@@ -47,8 +47,8 @@ export function AuthScreen() {
             <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Como podemos chamar você?" placeholderTextColor={colors.textMuted} />
             <Text style={styles.label}>Quero usar como</Text>
             <View style={styles.roleRow}>
-              <RoleButton active={role === 'passenger'} icon={<UserRound size={20} color={role === 'passenger' ? '#FFFFFF' : colors.primary} />} label="Passageiro" onPress={() => setRole('passenger')} />
-              <RoleButton active={role === 'driver'} icon={<CarFront size={20} color={role === 'driver' ? '#FFFFFF' : colors.primary} />} label="Motorista" onPress={() => setRole('driver')} />
+              <RoleButton active={role === 'passenger'} icon={<UserRound size={20} color={role === 'passenger' ? colors.text : colors.primaryDark} />} label="Passageiro" onPress={() => setRole('passenger')} />
+              <RoleButton active={role === 'driver'} icon={<CarFront size={20} color={role === 'driver' ? colors.text : colors.primaryDark} />} label="Motorista" onPress={() => setRole('driver')} />
             </View>
           </>
         )}
@@ -58,7 +58,7 @@ export function AuthScreen() {
         <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry placeholder="Mínimo de 6 caracteres" placeholderTextColor={colors.textMuted} />
 
         <Pressable style={styles.submit} onPress={submit} disabled={busy}>
-          {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitText}>{creating ? 'Criar conta' : 'Entrar'}</Text>}
+          {busy ? <ActivityIndicator color={colors.text} /> : <Text style={styles.submitText}>{creating ? 'Criar conta' : 'Entrar'}</Text>}
         </Pressable>
         <Pressable style={styles.switch} onPress={() => setCreating((value) => !value)}>
           <Text style={styles.switchText}>{creating ? 'Já tenho conta' : 'Criar uma conta'}</Text>
@@ -80,18 +80,18 @@ function RoleButton({ active, icon, label, onPress }: { active: boolean; icon: R
 const styles = StyleSheet.create({
   page: { flex: 1, justifyContent: 'center', padding: 22, backgroundColor: colors.background },
   hero: { gap: 12, marginBottom: 22 },
-  title: { color: colors.text, fontSize: 30, lineHeight: 35, fontWeight: '900', letterSpacing: 0 },
-  subtitle: { color: colors.textMuted, fontSize: 15, lineHeight: 22 },
+  title: { color: colors.text, fontSize: 30, lineHeight: 35, fontFamily: fonts.extraBold, letterSpacing: 0 },
+  subtitle: { color: colors.textMuted, fontSize: 15, lineHeight: 22, fontFamily: fonts.regular },
   panel: { gap: 9, padding: 18, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface, ...shadow },
-  label: { marginTop: 4, color: colors.text, fontSize: 12, fontWeight: '800' },
-  input: { height: 48, paddingHorizontal: 13, borderWidth: 1, borderColor: colors.line, borderRadius: radius.medium, color: colors.text, backgroundColor: colors.background },
+  label: { marginTop: 4, color: colors.text, fontSize: 12, fontFamily: fonts.bold },
+  input: { height: 48, paddingHorizontal: 13, borderWidth: 1, borderColor: colors.line, borderRadius: radius.medium, color: colors.text, backgroundColor: colors.background, fontFamily: fonts.regular },
   roleRow: { flexDirection: 'row', gap: 9 },
   roleButton: { flex: 1, height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1, borderColor: colors.primary, borderRadius: radius.medium },
   roleButtonActive: { backgroundColor: colors.primary },
-  roleText: { color: colors.primary, fontWeight: '800' },
-  roleTextActive: { color: '#FFFFFF' },
-  submit: { height: 50, marginTop: 10, borderRadius: radius.medium, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary },
-  submitText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
+  roleText: { color: colors.primaryDark, fontFamily: fonts.bold },
+  roleTextActive: { color: colors.text },
+  submit: { height: 50, marginTop: 10, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary },
+  submitText: { color: colors.text, fontSize: 15, fontFamily: fonts.extraBold },
   switch: { padding: 10, alignItems: 'center' },
-  switchText: { color: colors.primary, fontWeight: '800' },
+  switchText: { color: colors.primaryDark, fontFamily: fonts.bold },
 })
