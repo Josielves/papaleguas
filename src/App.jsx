@@ -33,9 +33,9 @@ function Shell() {
   const [toast, setToast] = useState(null)
   const isDriverDesktop = useMediaQuery('(min-width: 900px)')
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-[#0b0f08]/50">Carregando...</div>
+  if (loading) return <LoadingScreen label="Carregando sua viagem" />
   if (!session) return <Auth />
-  if (!profile?.role) return <div className="min-h-screen flex items-center justify-center text-[#0b0f08]/50">Completando seu cadastro...</div>
+  if (!profile?.role) return <LoadingScreen label="Completando seu cadastro" />
 
   const user = {
     ...session.user,
@@ -264,6 +264,16 @@ function PageFallback() {
     <main className="page-container" aria-live="polite">
       <div className="skeleton" style={{ height: '12rem', borderRadius: 'var(--radius-md)' }} />
     </main>
+  )
+}
+
+function LoadingScreen({ label }) {
+  return (
+    <div className="brand-loading" role="status" aria-live="polite">
+      <Logo />
+      <span className="brand-loading__track"><i /></span>
+      <p>{label}</p>
+    </div>
   )
 }
 

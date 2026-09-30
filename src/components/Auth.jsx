@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CarFront, UserRound } from 'lucide-react'
+import { ArrowRight, CarFront, MapPin, ShieldCheck, UserRound } from 'lucide-react'
 import { signIn, signUp } from '../lib/supabase'
 import Logo from './Logo'
 
@@ -36,17 +36,28 @@ export default function Auth({ onAuthed }) {
   }
 
   return (
-    <div className="auth-shell">
-      <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'center' }}><Logo /></div>
-        <p style={{ marginTop: '0.375rem', fontSize: '0.875rem' }}>
-          Caronas fixas entre regiões da cidade
-        </p>
-      </div>
+    <main className="auth-page">
+      <section className="auth-brand" aria-label="Papa-léguas">
+        <Logo />
+        <div className="auth-brand__message">
+          <p className="eyebrow">Mobilidade que acompanha você</p>
+          <h1>Seu caminho,<br />no seu ritmo.</h1>
+          <p>Encontre uma rota, escolha seu lugar e acompanhe a viagem de ponta a ponta.</p>
+        </div>
+        <div className="auth-brand__features" aria-label="Recursos principais">
+          <span><MapPin size={17} aria-hidden="true" /> Rotas em tempo real</span>
+          <span><ShieldCheck size={17} aria-hidden="true" /> Reserva segura</span>
+        </div>
+      </section>
 
-      <div className="route-divider" style={{ marginBottom: '1.5rem' }} />
+      <section className="auth-shell">
+        <div className="auth-shell__header">
+          <p className="eyebrow">Bem-vindo ao Papa-léguas</p>
+          <h2>{mode === 'login' ? 'Entre para continuar' : 'Crie sua conta'}</h2>
+          <p>{mode === 'login' ? 'Acesse suas rotas, reservas e mensagens.' : 'Escolha como você quer viajar com a gente.'}</p>
+        </div>
 
-      <div className="nav-tabs" style={{ marginBottom: '1.5rem' }}>
+        <div className="nav-tabs auth-tabs">
         <button
           type="button"
           className={`nav-tab ${mode === 'login' ? 'is-active' : ''}`}
@@ -156,11 +167,13 @@ export default function Auth({ onAuthed }) {
           </div>
         )}
 
-        <button className="btn btn-primary btn-block" type="submit" disabled={loading}>
-          {loading ? 'Aguarde…' : mode === 'login' ? 'Entrar' : 'Criar conta'}
+        <button className="btn btn-primary btn-block auth-submit" type="submit" disabled={loading}>
+          <span>{loading ? 'Aguarde…' : mode === 'login' ? 'Entrar' : 'Criar conta'}</span>
+          {!loading && <ArrowRight size={18} aria-hidden="true" />}
         </button>
       </form>
-    </div>
+      </section>
+    </main>
   )
 }
 
