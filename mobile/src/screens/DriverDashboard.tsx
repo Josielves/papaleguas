@@ -4,7 +4,7 @@ import { ArrowRight, BusFront, CarFront, CircleDollarSign, MapPin, Play, Route a
 import { LiveRouteMap } from '../components/LiveRouteMap'
 import { useDriverLocation } from '../hooks/useDriverLocation'
 import { supabase } from '../lib/supabase'
-import { colors, fonts, radius, shadow } from '../theme'
+import { colors, fonts, radius } from '../theme'
 import type { Profile, Route } from '../types'
 
 type Props = {
@@ -54,12 +54,12 @@ export function DriverDashboard({ profile, routes, loading, onRefresh }: Props) 
     >
       <Text style={styles.eyebrow}>PAINEL DO MOTORISTA</Text>
       <Text style={styles.title}>Olá, {profile.name.split(' ')[0]}</Text>
-      <Text style={styles.subtitle}>Controle rotas, passageiros e a operação da próxima saída.</Text>
+      <Text style={styles.subtitle}>Sua operação de hoje, em um só lugar.</Text>
 
       <View style={styles.metrics}>
-        <Metric icon={<UsersRound size={20} color={colors.blue} />} value={String(metrics.passengers)} label="Passageiros" />
-        <Metric icon={<CircleDollarSign size={20} color={colors.primary} />} value={`R$ ${metrics.revenue}`} label="Receita" />
-        <Metric icon={<RouteIcon size={20} color={colors.amber} />} value={`${metrics.occupancy}%`} label="Ocupação" />
+        <Metric tone="dark" icon={<UsersRound size={20} color={colors.primary} />} value={String(metrics.passengers)} label="Passageiros" />
+        <Metric tone="primary" icon={<CircleDollarSign size={20} color={colors.text} />} value={`R$ ${metrics.revenue}`} label="Receita" />
+        <Metric icon={<RouteIcon size={20} color={colors.blue} />} value={`${metrics.occupancy}%`} label="Ocupação" />
       </View>
 
       {activeRoute && (
@@ -126,12 +126,12 @@ export function DriverDashboard({ profile, routes, loading, onRefresh }: Props) 
   )
 }
 
-function Metric({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
+function Metric({ icon, value, label, tone = 'surface' }: { icon: React.ReactNode; value: string; label: string; tone?: 'surface' | 'dark' | 'primary' }) {
   return (
-    <View style={styles.metric}>
+    <View style={[styles.metric, tone === 'dark' && styles.metricDark, tone === 'primary' && styles.metricPrimary]}>
       {icon}
-      <Text style={styles.metricValue}>{value}</Text>
-      <Text style={styles.metricLabel}>{label}</Text>
+      <Text style={[styles.metricValue, tone === 'dark' && styles.metricValueDark]}>{value}</Text>
+      <Text style={[styles.metricLabel, tone === 'dark' && styles.metricLabelDark]}>{label}</Text>
     </View>
   )
 }
@@ -143,34 +143,38 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background },
   content: { padding: 18, paddingBottom: 110, gap: 14 },
   eyebrow: { color: colors.primaryDark, fontSize: 11, fontFamily: fonts.extraBold, letterSpacing: 0 },
-  title: { color: colors.text, fontSize: 28, fontFamily: fonts.extraBold },
+  title: { color: colors.text, fontSize: 29, fontFamily: fonts.extraBold },
   subtitle: { color: colors.textMuted, fontSize: 14, lineHeight: 20, fontFamily: fonts.regular },
   metrics: { flexDirection: 'row', gap: 8 },
-  metric: { flex: 1, minHeight: 104, justifyContent: 'space-between', padding: 12, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface, ...shadow },
+  metric: { flex: 1, minHeight: 105, justifyContent: 'space-between', padding: 12, borderWidth: 1, borderColor: colors.line, borderRadius: radius.medium, backgroundColor: colors.surface },
+  metricDark: { borderColor: colors.text, backgroundColor: colors.text },
+  metricPrimary: { borderColor: colors.primary, backgroundColor: colors.primary },
   metricValue: { color: colors.text, fontSize: 19, fontFamily: fonts.extraBold },
+  metricValueDark: { color: colors.surface },
   metricLabel: { color: colors.textMuted, fontSize: 11, fontFamily: fonts.bold },
+  metricLabelDark: { color: '#B7C0B3' },
   mapBlock: { gap: 11 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 5 },
   sectionTitle: { color: colors.text, fontSize: 18, fontFamily: fonts.extraBold },
   sectionCaption: { color: colors.textMuted, fontSize: 12 },
-  broadcast: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6, backgroundColor: colors.primarySoft },
+  broadcast: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 6, borderRadius: 999, backgroundColor: colors.primary },
   broadcastIdle: { backgroundColor: colors.surfaceMuted },
   broadcastDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.primary },
   broadcastDotIdle: { backgroundColor: colors.textMuted },
   broadcastText: { color: colors.text, fontSize: 10, fontWeight: '800' },
   error: { color: '#9F1239', fontSize: 12 },
-  routeCard: { gap: 12, padding: 15, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface },
-  routeCardActive: { borderColor: colors.primaryHover, backgroundColor: colors.primarySoft },
+  routeCard: { gap: 12, padding: 15, borderWidth: 1, borderColor: colors.line, borderRadius: radius.medium, backgroundColor: colors.surface },
+  routeCardActive: { borderColor: colors.primaryHover, borderLeftWidth: 4, backgroundColor: colors.surface },
   routeTop: { flexDirection: 'row', gap: 10 },
   routeTitle: { color: colors.text, fontSize: 16, fontFamily: fonts.extraBold },
   routeTime: { marginTop: 4, color: colors.textMuted, fontSize: 12 },
-  status: { color: colors.primaryDark, fontSize: 9, fontFamily: fonts.extraBold },
+  status: { paddingHorizontal: 8, paddingVertical: 5, overflow: 'hidden', borderRadius: 999, color: colors.text, backgroundColor: colors.primary, fontSize: 9, fontFamily: fonts.extraBold },
   routeInfo: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   info: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   infoText: { color: colors.textMuted, fontSize: 12 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, paddingTop: 11, borderTopWidth: 1, borderTopColor: colors.line },
-  secondary: { height: 41, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: colors.primaryHover },
-  secondaryText: { color: colors.primaryDark, fontFamily: fonts.bold },
+  secondary: { height: 41, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: colors.text },
+  secondaryText: { color: colors.text, fontFamily: fonts.bold },
   primary: { height: 41, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, borderRadius: 999, backgroundColor: colors.primary },
   primaryText: { color: colors.text, fontFamily: fonts.extraBold },
   empty: { alignItems: 'center', gap: 8, padding: 28, borderRadius: radius.large, backgroundColor: colors.surface },

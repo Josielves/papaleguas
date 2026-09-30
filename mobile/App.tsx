@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import {
   BricolageGrotesque_400Regular,
@@ -10,7 +10,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/bricolage-grotesque'
 import type { Session } from '@supabase/supabase-js'
-import { Bell, CalendarCheck, Home, MessageCircle, Route as RouteIcon, UserRound } from 'lucide-react-native'
+import { Bell, CalendarCheck, ChevronRight, Home, MessageCircle, Route as RouteIcon, UserRound } from 'lucide-react-native'
 import { Brand } from './src/components/Brand'
 import { NotificationInbox } from './src/components/NotificationInbox'
 import { demoProfile, demoRoutes } from './src/data/demo'
@@ -168,7 +168,14 @@ export default function App() {
       ], [role])
 
   if (authLoading || !fontsLoaded) {
-    return <View style={styles.loading}><ActivityIndicator size="large" color={colors.primary} /><Text style={styles.loadingText}>Preparando suas rotas...</Text></View>
+    return (
+      <View style={styles.loading}>
+        <Image source={require('./assets/splash-icon.png')} style={styles.loadingBird} resizeMode="contain" />
+        <Text style={styles.loadingBrand}>Papa-léguas</Text>
+        <ActivityIndicator size="small" color={colors.text} />
+        <Text style={styles.loadingText}>Preparando suas rotas...</Text>
+      </View>
+    )
   }
   if (isSupabaseConfigured && !session) return <AuthScreen />
 
@@ -196,13 +203,15 @@ export default function App() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
-      <View style={styles.header}>
-        <Brand />
-        <Pressable style={styles.bell} onPress={() => setInboxOpen(true)} accessibilityLabel={`${unread} notificações não lidas`}>
-          <Bell size={21} color={colors.text} />
-          {unread > 0 && <View style={styles.badge}><Text style={styles.badgeText}>{unread > 9 ? '9+' : unread}</Text></View>}
-        </Pressable>
-      </View>
+      {!selectedRoute && (
+        <View style={styles.header}>
+          <Brand />
+          <Pressable style={styles.bell} onPress={() => setInboxOpen(true)} accessibilityLabel={`${unread} notificações não lidas`}>
+            <Bell size={20} color={colors.text} />
+            {unread > 0 && <View style={styles.badge}><Text style={styles.badgeText}>{unread > 9 ? '9+' : unread}</Text></View>}
+          </Pressable>
+        </View>
+      )}
       <View style={styles.main}>{content}</View>
       {!selectedRoute && (
         <View style={styles.bottomNav}>
@@ -211,6 +220,7 @@ export default function App() {
             const Icon = item.icon
             return (
               <Pressable key={item.id} style={[styles.navItem, active && styles.navItemActive]} onPress={() => setTab(item.id)}>
+                {active && <View style={styles.navIndicator} />}
                 <Icon size={21} color={active ? colors.text : colors.textMuted} strokeWidth={active ? 2.7 : 2} />
                 <Text style={[styles.navText, active && styles.navTextActive]}>{item.label}</Text>
               </Pressable>
@@ -226,12 +236,14 @@ export default function App() {
 function ActivityView({ role, routes, onSelectRoute }: { role: AppRole; routes: Route[]; onSelectRoute: (route: Route) => void }) {
   return (
     <View style={styles.placeholder}>
+      <Text style={styles.placeholderEyebrow}>{role === 'driver' ? 'PLANEJAMENTO' : 'SUA AGENDA'}</Text>
       <Text style={styles.placeholderTitle}>{role === 'driver' ? 'Suas rotas' : 'Suas reservas'}</Text>
       <Text style={styles.placeholderText}>{role === 'driver' ? 'Acompanhe as próximas saídas e abra a operação no mapa.' : 'Consulte seus próximos embarques e acompanhe o motorista.'}</Text>
       {routes.slice(0, 4).map((route) => (
         <Pressable key={route.id} style={styles.placeholderCard} onPress={() => onSelectRoute(route)}>
-          <RouteIcon size={20} color={colors.primary} />
+          <View style={styles.cardIcon}><RouteIcon size={18} color={colors.text} /></View>
           <View style={{ flex: 1 }}><Text style={styles.cardTitle}>{route.origin_address.split(',')[0]} → {route.destination_address.split(',')[0]}</Text><Text style={styles.cardText}>{new Date(route.departure_time).toLocaleString('pt-BR')}</Text></View>
+          <ChevronRight size={19} color={colors.textMuted} />
         </Pressable>
       ))}
     </View>
@@ -241,31 +253,44 @@ function ActivityView({ role, routes, onSelectRoute }: { role: AppRole; routes: 
 function MessagesView() {
   return (
     <View style={styles.placeholder}>
+      <Text style={styles.placeholderEyebrow}>CONVERSAS</Text>
       <Text style={styles.placeholderTitle}>Mensagens</Text>
       <Text style={styles.placeholderText}>As conversas vinculadas às suas viagens aparecerão aqui.</Text>
-      <View style={styles.placeholderCard}><MessageCircle size={21} color={colors.primary} /><Text style={styles.cardText}>Nenhuma mensagem pendente.</Text></View>
+      <View style={styles.messageEmpty}>
+        <View style={styles.messageIcon}><MessageCircle size={25} color={colors.text} /></View>
+        <Text style={styles.messageTitle}>Tudo tranquilo por aqui</Text>
+        <Text style={styles.cardText}>Nenhuma mensagem pendente.</Text>
+      </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.surface },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: colors.background },
-  loadingText: { color: colors.textMuted, fontFamily: fonts.bold },
-  header: { height: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: colors.line, backgroundColor: colors.surface },
-  bell: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: colors.surfaceMuted },
-  badge: { position: 'absolute', top: 3, right: 3, minWidth: 17, height: 17, paddingHorizontal: 3, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: colors.coral },
-  badgeText: { color: '#FFFFFF', fontSize: 9, fontFamily: fonts.extraBold },
+  safe: { flex: 1, backgroundColor: colors.background },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: colors.primary },
+  loadingBird: { width: 132, height: 96 },
+  loadingBrand: { color: colors.text, fontSize: 24, fontFamily: fonts.extraBold },
+  loadingText: { color: colors.text, fontSize: 12, fontFamily: fonts.bold },
+  header: { height: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: colors.line, backgroundColor: colors.surface },
+  bell: { width: 39, height: 39, alignItems: 'center', justifyContent: 'center', borderRadius: 20, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface },
+  badge: { position: 'absolute', top: -1, right: -1, minWidth: 17, height: 17, paddingHorizontal: 3, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: colors.primary },
+  badgeText: { color: colors.text, fontSize: 9, fontFamily: fonts.extraBold },
   main: { flex: 1, backgroundColor: colors.background },
-  bottomNav: { height: 72, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.surface, ...shadow },
-  navItem: { flex: 1, height: 58, alignItems: 'center', justifyContent: 'center', gap: 4 },
-  navItemActive: { marginVertical: 7, borderRadius: 16, backgroundColor: colors.primary },
+  bottomNav: { height: 70, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.surface, ...shadow },
+  navItem: { flex: 1, height: 68, alignItems: 'center', justifyContent: 'center', gap: 4 },
+  navItemActive: { backgroundColor: colors.surface },
+  navIndicator: { position: 'absolute', top: 0, width: 28, height: 3, borderBottomLeftRadius: 3, borderBottomRightRadius: 3, backgroundColor: colors.primary },
   navText: { color: colors.textMuted, fontSize: 10, fontFamily: fonts.bold },
-  navTextActive: { color: colors.primaryDark, fontFamily: fonts.extraBold },
-  placeholder: { flex: 1, padding: 18, gap: 12, backgroundColor: colors.background },
-  placeholderTitle: { color: colors.text, fontSize: 28, fontFamily: fonts.extraBold },
+  navTextActive: { color: colors.text, fontFamily: fonts.extraBold },
+  placeholder: { flex: 1, padding: 20, gap: 12, backgroundColor: colors.background },
+  placeholderEyebrow: { color: colors.primaryDark, fontSize: 10, fontFamily: fonts.extraBold },
+  placeholderTitle: { color: colors.text, fontSize: 27, fontFamily: fonts.extraBold },
   placeholderText: { color: colors.textMuted, lineHeight: 20, fontFamily: fonts.regular },
-  placeholderCard: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 11, padding: 14, borderWidth: 1, borderColor: colors.line, borderRadius: 16, backgroundColor: colors.surface },
+  placeholderCard: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 13, borderBottomWidth: 1, borderBottomColor: colors.line, backgroundColor: colors.surface },
+  cardIcon: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 19, backgroundColor: colors.primary },
   cardTitle: { color: colors.text, fontFamily: fonts.extraBold },
   cardText: { color: colors.textMuted, fontSize: 12, fontFamily: fonts.regular },
+  messageEmpty: { alignItems: 'center', gap: 7, paddingVertical: 48, borderWidth: 1, borderColor: colors.line, borderRadius: 20, backgroundColor: colors.surface },
+  messageIcon: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, backgroundColor: colors.primary },
+  messageTitle: { marginTop: 4, color: colors.text, fontSize: 16, fontFamily: fonts.extraBold },
 })

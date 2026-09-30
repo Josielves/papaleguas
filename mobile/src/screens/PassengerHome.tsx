@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { ArrowRight, Armchair, Clock3, MapPin, Search } from 'lucide-react-native'
+import { ArrowRight, ArrowUpDown, Armchair, Clock3, MapPin, Search } from 'lucide-react-native'
 import { LiveRouteMap } from '../components/LiveRouteMap'
 import { colors, fonts, radius, shadow } from '../theme'
 import type { Profile, Route } from '../types'
@@ -37,8 +37,21 @@ export function PassengerHome({ profile, routes, loading, loadingMore, hasMore, 
       refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor={colors.primary} />}
       keyboardShouldPersistTaps="handled"
     >
+      <Text style={styles.eyebrow}>PASSAGEIRO</Text>
       <Text style={styles.greeting}>Olá, {profile.name.split(' ')[0]}</Text>
       <Text style={styles.title}>Para onde você vai?</Text>
+
+      <View style={styles.tripStrip}>
+        <View style={styles.tripStripItem}>
+          <Text style={styles.tripStripLabel}>ROTAS ABERTAS</Text>
+          <Text style={styles.tripStripValue}>{routes.length}</Text>
+        </View>
+        <View style={styles.tripStripDivider} />
+        <View style={styles.tripStripItem}>
+          <Text style={styles.tripStripLabel}>PRÓXIMA SAÍDA</Text>
+          <Text style={styles.tripStripValue}>{routes[0] ? timeOnly(routes[0].departure_time) : '--:--'}</Text>
+        </View>
+      </View>
 
       <View style={styles.searchPanel}>
         <View style={styles.fieldRow}>
@@ -48,6 +61,13 @@ export function PassengerHome({ profile, routes, loading, loadingMore, hasMore, 
             <TextInput value={origin} onChangeText={setOrigin} style={styles.input} placeholder="Sua origem" placeholderTextColor={colors.textMuted} />
           </View>
         </View>
+        <Pressable
+          style={styles.swap}
+          onPress={() => { setOrigin(destination); setDestination(origin) }}
+          accessibilityLabel="Inverter origem e destino"
+        >
+          <ArrowUpDown size={17} color={colors.text} />
+        </Pressable>
         <View style={styles.connector} />
         <View style={styles.fieldRow}>
           <MapPin size={19} color={colors.coral} />
@@ -57,7 +77,7 @@ export function PassengerHome({ profile, routes, loading, loadingMore, hasMore, 
           </View>
         </View>
         <Pressable style={styles.searchButton} onPress={() => setSearching(true)}>
-          <Search size={19} color={colors.text} />
+          <Search size={19} color={colors.primary} />
           <Text style={styles.searchText}>Procurar rotas</Text>
         </Pressable>
       </View>
@@ -115,7 +135,7 @@ function RouteCard({ route, onPress }: { route: Route; onPress: () => void }) {
           <Text style={styles.driverName}>{route.driver?.name ?? 'Motorista Papaleguas'}</Text>
           <Text style={styles.vehicle}>{route.vehicle_model ?? 'Veículo cadastrado'}</Text>
         </View>
-        <ArrowRight size={20} color={colors.text} />
+        <View style={styles.routeAction}><ArrowRight size={18} color={colors.text} /></View>
       </View>
     </Pressable>
   )
@@ -131,25 +151,34 @@ function formatDeparture(value: string) {
   return `${today} • ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
 }
 
+const timeOnly = (value: string) => new Date(value).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background },
   content: { padding: 18, paddingBottom: 110, gap: 14 },
-  greeting: { color: colors.textMuted, fontSize: 14, fontFamily: fonts.semibold },
-  title: { color: colors.text, fontSize: 28, lineHeight: 34, fontFamily: fonts.extraBold, letterSpacing: 0 },
-  searchPanel: { padding: 15, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface, ...shadow },
+  eyebrow: { color: colors.primaryDark, fontSize: 10, fontFamily: fonts.extraBold },
+  greeting: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.semibold },
+  title: { marginTop: -8, color: colors.text, fontSize: 29, lineHeight: 34, fontFamily: fonts.extraBold, letterSpacing: 0 },
+  tripStrip: { minHeight: 78, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, borderRadius: radius.large, backgroundColor: colors.text },
+  tripStripItem: { flex: 1, gap: 3 },
+  tripStripLabel: { color: '#AEB8AA', fontSize: 9, fontFamily: fonts.extraBold },
+  tripStripValue: { color: colors.primary, fontSize: 22, fontFamily: fonts.extraBold },
+  tripStripDivider: { width: 1, height: 34, marginHorizontal: 16, backgroundColor: '#394036' },
+  searchPanel: { position: 'relative', padding: 15, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface, ...shadow },
   fieldRow: { minHeight: 57, flexDirection: 'row', alignItems: 'center', gap: 10 },
   fieldCopy: { flex: 1 },
   label: { color: colors.textMuted, fontSize: 10, fontFamily: fonts.extraBold, letterSpacing: 0 },
   input: { height: 36, padding: 0, color: colors.text, fontSize: 16, fontFamily: fonts.bold },
   connector: { height: 1, marginLeft: 30, backgroundColor: colors.line },
-  searchButton: { height: 48, marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 999, backgroundColor: colors.primary },
-  searchText: { color: colors.text, fontFamily: fonts.extraBold, fontSize: 15 },
+  swap: { position: 'absolute', zIndex: 2, right: 16, top: 56, width: 34, height: 34, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.line, borderRadius: 17, backgroundColor: colors.surface },
+  searchButton: { height: 48, marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 999, backgroundColor: colors.text },
+  searchText: { color: colors.primary, fontFamily: fonts.extraBold, fontSize: 15 },
   mapSection: { gap: 10 },
   sectionHeader: { marginTop: 6, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sectionTitle: { color: colors.text, fontSize: 18, fontFamily: fonts.extraBold },
-  liveLabel: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 999, overflow: 'hidden', color: colors.primaryDark, backgroundColor: colors.primarySoft, fontSize: 10, fontFamily: fonts.extraBold },
+  liveLabel: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 999, overflow: 'hidden', color: colors.text, backgroundColor: colors.primary, fontSize: 10, fontFamily: fonts.extraBold },
   resultCount: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
-  routeCard: { gap: 13, padding: 15, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface, ...shadow },
+  routeCard: { gap: 12, padding: 15, borderWidth: 1, borderColor: colors.line, borderRadius: radius.medium, backgroundColor: colors.surface },
   routeTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
   routePath: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
   routeName: { maxWidth: 92, color: colors.text, fontSize: 15, fontFamily: fonts.extraBold },
@@ -163,6 +192,7 @@ const styles = StyleSheet.create({
   avatarText: { color: colors.blue, fontWeight: '900' },
   driverName: { color: colors.text, fontFamily: fonts.bold, fontSize: 13 },
   vehicle: { color: colors.textMuted, fontSize: 12 },
+  routeAction: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center', borderRadius: 17, backgroundColor: colors.primary },
   empty: { padding: 24, alignItems: 'center', borderRadius: radius.large, backgroundColor: colors.surface },
   emptyTitle: { color: colors.text, fontWeight: '900' },
   emptyText: { marginTop: 5, color: colors.textMuted, textAlign: 'center' },

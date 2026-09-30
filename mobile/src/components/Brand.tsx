@@ -17,8 +17,8 @@ export function Brand({ compact = false }: Props) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  image: { width: 54, height: 38 },
-  compactImage: { width: 40, height: 30 },
-  name: { color: colors.text, fontSize: 19, fontFamily: fonts.extraBold, letterSpacing: 0 },
+  wrap: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  image: { width: 52, height: 38 },
+  compactImage: { width: 39, height: 28 },
+  name: { color: colors.text, fontSize: 18, fontFamily: fonts.extraBold, letterSpacing: 0 },
 })

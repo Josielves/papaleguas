@@ -3,7 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { CheckCheck, X } from 'lucide-react-native'
 import { demoNotifications } from '../data/demo'
 import { supabase } from '../lib/supabase'
-import { colors, fonts, radius, shadow } from '../theme'
+import { colors, fonts, shadow } from '../theme'
 import type { AppNotification } from '../types'
 import { Brand } from './Brand'
 
@@ -83,7 +83,7 @@ export function NotificationInbox({ visible, userId, incoming, onClose, onOpenRo
                   <Text style={styles.itemMessage}>{item.message}</Text>
                   <Text style={styles.time}>{new Date(item.created_at).toLocaleString('pt-BR')}</Text>
                 </View>
-                {item.read_at && <CheckCheck size={17} color={colors.primary} />}
+                {item.read_at && <CheckCheck size={17} color={colors.primaryDark} />}
               </Pressable>
             ))}
           </ScrollView>
@@ -94,13 +94,13 @@ export function NotificationInbox({ visible, userId, incoming, onClose, onOpenRo
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15,23,42,0.34)' },
+  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(11,15,8,0.38)' },
   sheet: {
-    maxHeight: '78%',
-    minHeight: 430,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    backgroundColor: colors.background,
+    maxHeight: '88%',
+    minHeight: 520,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    backgroundColor: colors.surface,
     paddingHorizontal: 18,
     paddingBottom: 22,
     ...shadow,
@@ -110,19 +110,20 @@ const styles = StyleSheet.create({
   headerCopy: { flex: 1, marginLeft: 9 },
   eyebrow: { color: colors.primaryDark, fontSize: 10, fontFamily: fonts.extraBold, letterSpacing: 0 },
   title: { color: colors.text, fontSize: 21, fontFamily: fonts.extraBold },
-  close: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radius.medium, backgroundColor: colors.surface },
-  list: { gap: 9, paddingVertical: 14 },
+  close: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.line, borderRadius: 20, backgroundColor: colors.surface },
+  list: { paddingVertical: 8 },
   item: {
     flexDirection: 'row',
     gap: 10,
     alignItems: 'flex-start',
-    padding: 13,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: radius.medium,
+    minHeight: 88,
+    paddingHorizontal: 8,
+    paddingVertical: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
     backgroundColor: colors.surface,
   },
-  itemUnread: { borderColor: colors.primaryHover, backgroundColor: colors.primarySoft },
+  itemUnread: { borderLeftWidth: 3, borderLeftColor: colors.primary, backgroundColor: colors.primarySoft },
   dot: { width: 9, height: 9, marginTop: 5, borderRadius: 5, backgroundColor: colors.primary },
   dotRead: { backgroundColor: colors.line },
   itemCopy: { flex: 1, gap: 3 },

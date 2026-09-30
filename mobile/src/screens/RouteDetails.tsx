@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { ArrowLeft, BusFront, CarFront, MapPin, ShieldCheck, Star } from 'lucide-react-native'
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { ArrowLeft, BusFront, CarFront, Clock3, MapPin, ShieldCheck, Star } from 'lucide-react-native'
 import { LiveRouteMap } from '../components/LiveRouteMap'
 import { SeatMap } from '../components/SeatMap'
 import { supabase } from '../lib/supabase'
@@ -58,10 +58,13 @@ export function RouteDetails({ route, profile, onBack }: Props) {
 
   return (
     <ScrollView style={styles.page} contentContainerStyle={styles.content}>
-      <Pressable style={styles.back} onPress={onBack} accessibilityLabel="Voltar">
-        <ArrowLeft size={21} color={colors.text} />
-        <Text style={styles.backText}>Procurar viagem</Text>
-      </Pressable>
+      <View style={styles.topBar}>
+        <Pressable style={styles.back} onPress={onBack} accessibilityLabel="Voltar">
+          <ArrowLeft size={20} color={colors.text} />
+        </Pressable>
+        <Text style={styles.topTitle}>Detalhes da viagem</Text>
+        <View style={styles.topSpacer} />
+      </View>
 
       <LiveRouteMap route={route} height={300} />
 
@@ -69,13 +72,15 @@ export function RouteDetails({ route, profile, onBack }: Props) {
         <View style={styles.pathRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.path}>{short(route.origin_address)} → {short(route.destination_address)}</Text>
-            <Text style={styles.departure}>{formatDate(route.departure_time)}</Text>
+            <View style={styles.inline}><Clock3 size={14} color={colors.textMuted} /><Text style={styles.departure}>{formatDate(route.departure_time)}</Text></View>
           </View>
           <Text style={styles.price}>R$ {Number(route.price ?? 10).toFixed(2).replace('.', ',')}</Text>
         </View>
 
         <View style={styles.driverRow}>
-          <View style={styles.avatar}><Text style={styles.avatarText}>{route.driver?.name?.[0] ?? 'P'}</Text></View>
+          {route.driver?.avatar_url
+            ? <Image source={{ uri: route.driver.avatar_url }} style={styles.avatarImage} />
+            : <View style={styles.avatar}><Text style={styles.avatarText}>{route.driver?.name?.[0] ?? 'P'}</Text></View>}
           <View style={{ flex: 1 }}>
             <Text style={styles.driver}>{route.driver?.name ?? 'Motorista Papaleguas'}</Text>
             <View style={styles.inline}><VehicleIcon size={15} color={colors.textMuted} /><Text style={styles.muted}>{[route.vehicle_brand, route.vehicle_model].filter(Boolean).join(' ') || 'Veículo cadastrado'}{route.vehicle_capacity ? ` · ${route.vehicle_capacity} lugares` : ''}</Text></View>
@@ -86,12 +91,15 @@ export function RouteDetails({ route, profile, onBack }: Props) {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Escolha seu assento</Text>
+        <View style={styles.sectionHeading}>
+          <View><Text style={styles.kicker}>LUGARES</Text><Text style={styles.sectionTitle}>Escolha seu assento</Text></View>
+          {selected && <Text style={styles.selectedSeat}>Assento {selected}</Text>}
+        </View>
         <SeatMap seats={seats} selected={selected} onSelect={setSelected} vehicleType={route.vehicle_type === 'van' ? 'van' : 'car'} />
       </View>
 
       <View style={styles.section}>
-        <View style={styles.inline}><MapPin size={18} color={colors.primary} /><Text style={styles.sectionTitle}>Embarque</Text></View>
+        <View style={styles.inline}><MapPin size={18} color={colors.text} /><Text style={styles.sectionTitle}>Embarque</Text></View>
         <TextInput style={styles.input} value={pickupAddress} onChangeText={setPickupAddress} placeholder="Endereço de embarque" placeholderTextColor={colors.textMuted} />
       </View>
 
@@ -116,31 +124,37 @@ const formatDate = (value: string) => {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 18, paddingBottom: 120, gap: 14 },
-  back: { alignSelf: 'flex-start', height: 42, flexDirection: 'row', alignItems: 'center', gap: 7 },
-  backText: { color: colors.text, fontFamily: fonts.bold },
-  summary: { gap: 14, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface, ...shadow },
+  content: { padding: 18, paddingBottom: 36, gap: 14 },
+  topBar: { height: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  back: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.line, borderRadius: 19, backgroundColor: colors.surface },
+  topTitle: { color: colors.text, fontSize: 15, fontFamily: fonts.extraBold },
+  topSpacer: { width: 38 },
+  summary: { gap: 14, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: radius.medium, backgroundColor: colors.surface },
   pathRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   path: { color: colors.text, fontSize: 20, lineHeight: 25, fontFamily: fonts.extraBold },
-  departure: { marginTop: 4, color: colors.textMuted, fontSize: 13 },
+  departure: { color: colors.textMuted, fontSize: 13 },
   price: { color: colors.primaryDark, fontSize: 18, fontFamily: fonts.extraBold },
   driverRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 13, borderTopWidth: 1, borderTopColor: colors.line },
   avatar: { width: 43, height: 43, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.blueSoft },
+  avatarImage: { width: 43, height: 43, borderRadius: 22 },
   avatarText: { color: colors.blue, fontWeight: '900', fontSize: 17 },
   driver: { color: colors.text, fontFamily: fonts.extraBold },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   muted: { color: colors.textMuted, fontSize: 12 },
   rating: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   ratingText: { color: colors.text, fontWeight: '900' },
-  safety: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 9, borderRadius: radius.small, backgroundColor: colors.primarySoft },
-  safetyText: { color: colors.primaryDark, fontSize: 12, fontWeight: '800' },
-  section: { gap: 13, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface },
+  safety: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 9, borderRadius: radius.small, backgroundColor: colors.primary },
+  safetyText: { color: colors.text, fontSize: 12, fontWeight: '800' },
+  section: { gap: 13, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: radius.medium, backgroundColor: colors.surface },
+  sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  kicker: { color: colors.primaryDark, fontSize: 9, fontFamily: fonts.extraBold },
   sectionTitle: { color: colors.text, fontSize: 17, fontFamily: fonts.extraBold },
+  selectedSeat: { paddingHorizontal: 10, paddingVertical: 6, overflow: 'hidden', borderRadius: 999, color: colors.text, backgroundColor: colors.primary, fontSize: 11, fontFamily: fonts.extraBold },
   input: { height: 48, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.line, borderRadius: radius.medium, color: colors.text, backgroundColor: colors.background, fontFamily: fonts.regular },
-  confirmBar: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 15, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface, ...shadow },
-  confirmLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
-  confirmPrice: { color: colors.text, fontSize: 18, fontFamily: fonts.extraBold },
+  confirmBar: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 15, borderWidth: 1, borderColor: colors.text, borderRadius: radius.medium, backgroundColor: colors.text, ...shadow },
+  confirmLabel: { color: '#B7C0B3', fontSize: 12, fontWeight: '700' },
+  confirmPrice: { color: colors.surface, fontSize: 18, fontFamily: fonts.extraBold },
   confirm: { flex: 1, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.primary },
-  confirmDisabled: { backgroundColor: '#94A3B8' },
+  confirmDisabled: { backgroundColor: '#66705F' },
   confirmText: { color: colors.text, fontFamily: fonts.extraBold },
 })

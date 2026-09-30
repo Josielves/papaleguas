@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import MapView, { Marker, Polyline, type LatLng } from 'react-native-maps'
-import { LocateFixed } from 'lucide-react-native'
+import { CarFront, LocateFixed, MapPin } from 'lucide-react-native'
 import { useLiveRoute } from '../hooks/useLiveRoute'
 import { colors, radius, shadow } from '../theme'
 import type { Coordinate, Route } from '../types'
@@ -110,16 +110,20 @@ export function LiveRouteMap({ route, pickup, height = 260 }: Props) {
         loadingIndicatorColor={colors.primary}
       >
         {line.length > 1 && <Polyline coordinates={line} strokeColor={colors.primary} strokeWidth={5} />}
-        {origin && <Marker coordinate={origin} title="Origem" pinColor={colors.primary} />}
-        {pickup && <Marker coordinate={pickup} title="Embarque" pinColor={colors.blue} />}
-        {destination && <Marker coordinate={destination} title="Destino" pinColor={colors.coral} />}
-        {driver && <Marker coordinate={driver} title="Motorista" pinColor={colors.amber} />}
+        {origin && <Marker coordinate={origin} title="Origem"><MapMarker tone="primary" /></Marker>}
+        {pickup && <Marker coordinate={pickup} title="Embarque"><MapMarker tone="blue" /></Marker>}
+        {destination && <Marker coordinate={destination} title="Destino"><MapMarker tone="coral" /></Marker>}
+        {driver && (
+          <Marker coordinate={driver} title="Motorista" anchor={{ x: 0.5, y: 0.5 }}>
+            <View style={styles.driverMarker}><CarFront size={17} color={colors.primary} /></View>
+          </Marker>
+        )}
       </MapView>
 
       <View style={styles.statusRow} pointerEvents="none">
         <View style={[styles.status, stale && styles.statusWarning]}>
           <View style={[styles.statusDot, stale && styles.statusDotWarning]} />
-          <Text style={styles.statusText}>{stale ? 'Sinal desatualizado' : 'Mapa em tempo real'}</Text>
+          <Text style={[styles.statusText, stale && styles.statusTextWarning]}>{stale ? 'Sinal desatualizado' : 'Mapa em tempo real'}</Text>
         </View>
       </View>
 
@@ -127,6 +131,15 @@ export function LiveRouteMap({ route, pickup, height = 260 }: Props) {
         <LocateFixed color={colors.text} size={20} />
       </Pressable>
       {error && <Text style={styles.error}>{error}</Text>}
+    </View>
+  )
+}
+
+function MapMarker({ tone }: { tone: 'primary' | 'blue' | 'coral' }) {
+  const backgroundColor = tone === 'primary' ? colors.primary : tone === 'blue' ? colors.blue : colors.coral
+  return (
+    <View style={[styles.mapMarker, { backgroundColor }]}>
+      <MapPin size={14} color={tone === 'primary' ? colors.text : colors.surface} fill={tone === 'primary' ? colors.text : colors.surface} />
     </View>
   )
 }
@@ -144,8 +157,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    backgroundColor: 'rgba(255,255,255,0.94)',
-    borderRadius: 8,
+    backgroundColor: 'rgba(11,15,8,0.92)',
+    borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 7,
     ...shadow,
@@ -153,14 +166,15 @@ const styles = StyleSheet.create({
   statusWarning: { backgroundColor: '#FFF7ED' },
   statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
   statusDotWarning: { backgroundColor: colors.coral },
-  statusText: { color: colors.text, fontSize: 12, fontWeight: '700' },
+  statusText: { color: colors.surface, fontSize: 11, fontWeight: '800' },
+  statusTextWarning: { color: colors.text },
   recenter: {
     position: 'absolute',
     right: 12,
     bottom: 12,
     width: 42,
     height: 42,
-    borderRadius: 8,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surface,
@@ -177,4 +191,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF1F2',
     fontSize: 12,
   },
+  mapMarker: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: colors.surface, borderRadius: 15, ...shadow },
+  driverMarker: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: colors.surface, borderRadius: 19, backgroundColor: colors.text, ...shadow },
 })

@@ -123,17 +123,23 @@ export function ProfileScreen({ profile, role, onRoleChange, onProfileChange }: 
 
   return (
     <ScrollView style={styles.page} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Text style={styles.title}>Seu perfil</Text>
-      <Text style={styles.subtitle}>Dados de contato e informações do veículo.</Text>
-
-      <View style={styles.identity}>
-        {profile.avatar_url
-          ? <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-          : <View style={styles.avatarFallback}><UserRound size={34} color={colors.blue} /></View>}
-        <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{profile.name}</Text>
-          <Text style={styles.role}>{role === 'driver' ? 'Motorista' : 'Passageiro'}</Text>
+      <View style={styles.profileHero}>
+        <Image source={require('../../assets/splash-icon.png')} style={styles.heroBird} resizeMode="contain" />
+        <Text style={styles.heroEyebrow}>SUA CONTA</Text>
+        <View style={styles.identity}>
+          {profile.avatar_url
+            ? <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+            : <View style={styles.avatarFallback}><UserRound size={34} color={colors.text} /></View>}
+          <View style={{ flex: 1 }}>
+            <Text style={styles.name}>{profile.name}</Text>
+            <Text style={styles.role}>{role === 'driver' ? 'Motorista' : 'Passageiro'}</Text>
+          </View>
         </View>
+      </View>
+
+      <View>
+        <Text style={styles.title}>Perfil e preferências</Text>
+        <Text style={styles.subtitle}>Mantenha seus dados e veículo atualizados.</Text>
       </View>
 
       <View style={styles.segmented}>
@@ -193,7 +199,7 @@ export function ProfileScreen({ profile, role, onRoleChange, onProfileChange }: 
         </View>
       )}
 
-      <Pressable style={styles.save} onPress={save} disabled={busy || lookingUp}><Save size={18} color={colors.text} /><Text style={styles.saveText}>{busy ? 'Salvando...' : 'Salvar alterações'}</Text></Pressable>
+      <Pressable style={styles.save} onPress={save} disabled={busy || lookingUp}><Save size={18} color={colors.primary} /><Text style={styles.saveText}>{busy ? 'Salvando...' : 'Salvar alterações'}</Text></Pressable>
 
       {supabase && profile.id !== 'demo-user' && (
         <Pressable style={styles.logout} onPress={() => supabase?.auth.signOut()}><LogOut size={18} color={colors.coral} /><Text style={styles.logoutText}>Sair da conta</Text></Pressable>
@@ -223,19 +229,22 @@ function VehicleTypeButton({ type, active, onPress }: { type: 'car' | 'van'; act
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background },
   content: { padding: 18, paddingBottom: 110, gap: 14 },
-  title: { color: colors.text, fontSize: 28, fontFamily: fonts.extraBold },
+  profileHero: { minHeight: 154, justifyContent: 'flex-end', overflow: 'hidden', padding: 16, borderRadius: radius.large, backgroundColor: colors.primary },
+  heroBird: { position: 'absolute', right: -8, top: -16, width: 150, height: 125, opacity: 0.28 },
+  heroEyebrow: { position: 'absolute', top: 16, left: 16, color: colors.text, fontSize: 10, fontFamily: fonts.extraBold },
+  title: { color: colors.text, fontSize: 24, fontFamily: fonts.extraBold },
   subtitle: { color: colors.textMuted, fontSize: 14, fontFamily: fonts.regular },
-  identity: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface, ...shadow },
-  avatar: { width: 64, height: 64, borderRadius: 32 },
-  avatarFallback: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.blueSoft },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: 13 },
+  avatar: { width: 64, height: 64, borderWidth: 3, borderColor: colors.surface, borderRadius: 32 },
+  avatarFallback: { width: 64, height: 64, borderWidth: 3, borderColor: colors.surface, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   name: { color: colors.text, fontSize: 19, fontFamily: fonts.extraBold },
-  role: { marginTop: 3, color: colors.primaryDark, fontSize: 13, fontFamily: fonts.bold },
+  role: { alignSelf: 'flex-start', marginTop: 4, paddingHorizontal: 8, paddingVertical: 4, overflow: 'hidden', borderRadius: 999, color: colors.surface, backgroundColor: colors.text, fontSize: 11, fontFamily: fonts.bold },
   segmented: { flexDirection: 'row', padding: 4, borderRadius: radius.medium, backgroundColor: colors.surfaceMuted },
   mode: { flex: 1, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 6 },
   modeActive: { backgroundColor: colors.surface, ...shadow },
   modeText: { color: colors.textMuted, fontFamily: fonts.bold },
   modeTextActive: { color: colors.primaryDark },
-  form: { gap: 13, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: radius.large, backgroundColor: colors.surface },
+  form: { gap: 13, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: radius.medium, backgroundColor: colors.surface },
   field: { gap: 7 },
   fieldLabel: { minHeight: 18, flexDirection: 'row', alignItems: 'center', gap: 6 },
   label: { color: colors.text, fontSize: 12, fontFamily: fonts.bold },
@@ -256,8 +265,8 @@ const styles = StyleSheet.create({
   vehicleTypeCaption: { color: colors.textMuted, fontSize: 9 },
   twoColumns: { flexDirection: 'row', gap: 9 },
   hint: { color: colors.textMuted, fontSize: 11, lineHeight: 16 },
-  save: { height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 999, backgroundColor: colors.primary },
-  saveText: { color: colors.text, fontFamily: fonts.extraBold },
+  save: { height: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 999, backgroundColor: colors.text, ...shadow },
+  saveText: { color: colors.primary, fontFamily: fonts.extraBold },
   logout: { height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1, borderColor: '#FECDD3', borderRadius: radius.medium, backgroundColor: '#FFF1F2' },
   logoutText: { color: colors.coral, fontWeight: '900' },
 })
