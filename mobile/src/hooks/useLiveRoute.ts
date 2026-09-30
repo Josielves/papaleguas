@@ -63,11 +63,6 @@ export function useLiveRoute(route: Route) {
     channel = supabase
       .channel(`route:${route.id}`, { config: { private: true } })
       .on('broadcast', { event: 'UPDATE' }, (payload) => update(payload.payload))
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'route_locations', filter: `route_id=eq.${route.id}` },
-        (payload) => update(payload as unknown as Record<string, unknown>),
-      )
       .subscribe()
 
     return () => {

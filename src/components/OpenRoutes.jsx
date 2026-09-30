@@ -9,8 +9,12 @@ import RouteDetails from './RouteDetails'
 import WaitlistPanel from './WaitlistPanel'
 
 export default function OpenRoutes({ user, onError, onSuccess }) {
+  const PAGE_SIZE = 20
   const [routes, setRoutes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [cursor, setCursor] = useState(null)
   const [filters, setFilters] = useState({ originRegion: '', destinationRegion: '' })
   const [draftFilters, setDraftFilters] = useState({ originRegion: '', destinationRegion: '' })
   const [detailRoute, setDetailRoute] = useState(null)
@@ -21,12 +25,26 @@ export default function OpenRoutes({ user, onError, onSuccess }) {
   const [sortByDistance, setSortByDistance] = useState(false)
   const [showMap, setShowMap] = useState(false)
 
-  async function load(nextFilters = filters) {
-    setLoading(true)
-    const { data, error } = await getOpenRoutes(nextFilters)
-    if (error) onError?.('Não foi possível carregar as rotas.')
-    setRoutes(data ?? [])
+  async function load(nextFilters = filters, { append = false } = {}) {
+    append ? setLoadingMore(true) : setLoading(true)
+    const nextCursor = append ? cursor : null
+    const { data, error } = await getOpenRoutes(nextFilters, {
+      cursor: nextCursor,
+      pageSize: PAGE_SIZE,
+    })
+    if (error) {
+      onError?.('Não foi possível carregar as rotas.')
+      setLoading(false)
+      setLoadingMore(false)
+      return
+    }
+    const page = data ?? []
+    setRoutes(current => append ? [...current, ...page] : page)
+    const last = page.at(-1)
+    setCursor(last ? { departureTime: last.departure_time, id: last.id } : null)
+    setHasMore(page.length === PAGE_SIZE)
     setLoading(false)
+    setLoadingMore(false)
   }
 
   useEffect(() => { load({ originRegion: '', destinationRegion: '' }) }, [])
@@ -189,6 +207,17 @@ export default function OpenRoutes({ user, onError, onSuccess }) {
             />
           ))}
         </div>
+
+        {!loading && hasMore && (
+          <button
+            className="btn btn-secondary"
+            type="button"
+            onClick={() => load(filters, { append: true })}
+            disabled={loadingMore}
+          >
+            {loadingMore ? 'Carregando...' : 'Carregar mais rotas'}
+          </button>
+        )}
       </section>
 
       {detailRoute && (

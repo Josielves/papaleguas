@@ -9,6 +9,8 @@
 - O Nominatim publico fica protegido por um limite global de uma chamada por segundo.
 - URL e atribuicao dos mapas podem apontar para um provedor contratado.
 - Dados pessoais de perfis deixam de ser consultaveis por qualquer conta autenticada.
+- A busca de rotas usa paginacao por cursor e payload limitado.
+- Notificacoes push usam outbox duravel, lotes e retry exponencial.
 
 Isso e uma fundacao de crescimento, nao uma garantia de 10 milhoes de conexoes.
 
@@ -20,7 +22,7 @@ Isso e uma fundacao de crescimento, nao uma garantia de 10 milhoes de conexoes.
 | Rotas e reservas | PostgreSQL/RPC | replicas de leitura, particionamento e arquivamento |
 | Localizacao atual | `route_locations` | servico de eventos regional quando a escrita exigir |
 | Chat | PostgreSQL + Realtime | retencao, paginacao por cursor e particionamento temporal |
-| Notificacoes | PostgreSQL + Realtime | outbox, fila e entrega push assicrona |
+| Notificacoes | Outbox + workers + Realtime | multiplos workers e entrega direta FCM/APNs quando necessario |
 | Geocodificacao | Edge Function + cache | provedor com SLA ou instancia propria |
 | Mapas | provedor configuravel | contrato de tiles com CDN e cota adequada |
 
@@ -43,6 +45,7 @@ Execute as migracoes na ordem documentada no README e publique a funcao:
 npx supabase login
 npx supabase link --project-ref SEU_PROJECT_REF
 npx supabase functions deploy geocode
+npx supabase functions deploy process-push-queue
 npx supabase secrets set GEOCODING_USER_AGENT="Papaleguas/2.0 (contato@seu-dominio.com)"
 ```
 
@@ -72,5 +75,10 @@ $env:TEST_ACCESS_TOKEN="token-de-um-usuario-de-teste"
 npm run load:routes
 ```
 
-O teste inicial usa 25 usuarios virtuais e exige menos de 1% de erros e p95
-abaixo de 800 ms. Aumente em etapas, nunca diretamente em producao.
+O teste usa taxa de chegada constante, com 25 RPS por padrao, e exige menos de
+1% de erros, nenhuma iteracao descartada e p95 abaixo de 500 ms. O roteiro para
+subir em etapas ate 10 mil RPS esta em `tests/load/README.md`; nunca rode
+diretamente em producao.
+
+O plano completo, a ordem de implantacao e os portoes de liberacao estao em
+`docs/scaling-25m.md`.

@@ -92,23 +92,17 @@ export async function signUp({ email, password, name, accountType, phone }) {
   return { data, error: null }
 }
 
-export async function getOpenRoutes(filters = {}) {
-  let query = supabase
-    .from('routes')
-    .select(`
-      *,
-      driver:profiles!routes_driver_id_fkey(id, name, phone, avatar_url),
-      seats(*)
-    `)
-    .in('status', ['open', 'full'])
-    .gte('departure_time', new Date().toISOString())
-    .order('departure_time', { ascending: true })
-    .limit(100)
-
-  if (filters.originRegion) query = query.eq('origin_region', filters.originRegion)
-  if (filters.destinationRegion) query = query.eq('destination_region', filters.destinationRegion)
-
-  return query
+export async function getOpenRoutes(filters = {}, options = {}) {
+  const cursor = options.cursor ?? null
+  const pageSize = Math.min(Math.max(Number(options.pageSize) || 20, 1), 50)
+  return supabase.rpc('search_routes_page', {
+    p_origin_region: filters.originRegion || null,
+    p_destination_region: filters.destinationRegion || null,
+    p_departure_after: new Date().toISOString(),
+    p_cursor_departure: cursor?.departureTime ?? null,
+    p_cursor_id: cursor?.id ?? null,
+    p_page_size: pageSize,
+  })
 }
 
 export function getDriverRoutes(driverId) {
@@ -304,12 +298,8 @@ export function markNotificationRead(notificationId, userId) {
 
 export function subscribeToNotifications(userId, onChange) {
   return supabase
-    .channel(`notifications-${userId}`)
-    .on(
-      'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
-      onChange
-    )
+    .channel(`user:${userId}:notifications`, { config: { private: true } })
+    .on('broadcast', { event: 'INSERT' }, ({ payload }) => onChange(payload))
     .subscribe()
 }
 
@@ -335,12 +325,8 @@ export function getRouteLocation(routeId) {
 
 export function subscribeToRouteLocation(routeId, onChange) {
   return supabase
-    .channel(`route-location-${routeId}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'route_locations', filter: `route_id=eq.${routeId}` },
-      onChange
-    )
+    .channel(`route:${routeId}`, { config: { private: true } })
+    .on('broadcast', { event: 'UPDATE' }, ({ payload }) => onChange(payload))
     .subscribe()
 }
 

@@ -86,11 +86,6 @@ export function subscribeToNativeNotifications(
   return supabase
     .channel(`user:${userId}:notifications`, { config: { private: true } })
     .on('broadcast', { event: 'INSERT' }, (payload) => void deliver(payload.payload))
-    .on(
-      'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
-      (payload) => void deliver(payload as unknown as Record<string, unknown>),
-    )
     .subscribe()
 }
 

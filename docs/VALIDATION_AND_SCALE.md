@@ -29,7 +29,9 @@ Resultado:
 - Consulta de placa ocorre pela Edge Function autenticada, com cache de 30 dias e cota diaria por usuario.
 - Motorista pode cadastrar carro (ate 8 passageiros) ou van (ate 20) e a RPC impede rotas acima da capacidade.
 
-Para estes fluxos, aplique `supabase/migration_operations_and_waitlist.sql` depois das migracoes anteriores.
+Para estes fluxos, aplique as migracoes na ordem documentada e finalize com
+`supabase/migration_hyperscale_foundation.sql`. Essa ultima migracao tambem
+corrige a autorizacao interna de `reserve_seat` e `start_route`.
 
 ## Fluxos que precisam passar antes de deploy
 
@@ -55,12 +57,18 @@ Para estes fluxos, aplique `supabase/migration_operations_and_waitlist.sql` depo
 Supabase pode sustentar um MVP serio, mas 10 milhoes de usuarios exigem arquitetura por carga, nao apenas mais indices.
 
 - Frontend: hospedar estatico em CDN, ativar code splitting para `react-leaflet`, carregar mapa apenas quando o usuario abrir acompanhamento, monitorar Web Vitals.
-- Banco: aplicar `supabase/migration_scale_and_security.sql`, revisar planos com `EXPLAIN ANALYZE`, limitar consultas por pagina, e criar politicas de retencao/arquivamento para rotas antigas, mensagens e localizacao.
+- Banco: aplicar `supabase/migration_hyperscale_foundation.sql`, revisar planos com `EXPLAIN ANALYZE` e automatizar a rotina de retencao.
 - Realtime: nao assinar tabelas amplas. Usar canais filtrados por `route_id`/`booking_id`, limitar transmissao de GPS por intervalo e desligar broadcast ao cancelar/finalizar rota.
 - API critica: manter reserva/cancelamento em RPC transacional. Toda RPC `security definer` deve validar `auth.uid()` internamente.
 - Observabilidade: registrar erro por fluxo, latencia de RPC, taxa de reserva concorrente, conexoes realtime, falhas de geocoding, tamanho de bundle e funil de cadastro.
 - Seguranca: remover credenciais reais de arquivos exemplo, ativar MFA para administradores Supabase, separar projetos dev/staging/prod, e revisar RLS antes de dados reais.
 - Escala de produto: para 10M, separar dominios quando necessario: rotas/reservas no Postgres, eventos de localizacao em estrutura propria de alta escrita, notificacoes em fila, analytics fora do OLTP.
+
+## Validacoes automatizadas
+
+- Build web de producao com `npm run build`.
+- TypeScript do aplicativo nativo com `cd mobile; npx tsc --noEmit`.
+- Busca por taxa de chegada constante com `npm run load:routes`.
 
 ## Proximas validacoes automatizadas
 
@@ -69,4 +77,4 @@ Adicionar depois:
 - Vitest para `getPrice`, `distanceKm`, `whatsAppLink`, ordenacao de paradas e validacoes de formulario.
 - Playwright para cadastro/login/criar rota/iniciar rota/reservar/cancelar/chat usando um projeto Supabase de staging.
 - Teste SQL com dados semente para RLS e RPCs concorrentes.
-- k6 ou Artillery para busca de rotas, reserva concorrente e WebSocket/realtime.
+- k6 para reserva concorrente e WebSocket/Realtime, com fixtures descartaveis.

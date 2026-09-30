@@ -9,11 +9,14 @@ type Props = {
   profile: Profile
   routes: Route[]
   loading: boolean
+  loadingMore: boolean
+  hasMore: boolean
   onRefresh: () => void
+  onLoadMore: () => void
   onSelectRoute: (route: Route) => void
 }
 
-export function PassengerHome({ profile, routes, loading, onRefresh, onSelectRoute }: Props) {
+export function PassengerHome({ profile, routes, loading, loadingMore, hasMore, onRefresh, onLoadMore, onSelectRoute }: Props) {
   const [origin, setOrigin] = useState('Centro')
   const [destination, setDestination] = useState('Região Norte')
   const [searching, setSearching] = useState(false)
@@ -81,6 +84,11 @@ export function PassengerHome({ profile, routes, loading, onRefresh, onSelectRou
         </View>
       )}
       {visibleRoutes.map((route) => <RouteCard key={route.id} route={route} onPress={() => onSelectRoute(route)} />)}
+      {hasMore && !searching && (
+        <Pressable style={styles.loadMore} onPress={onLoadMore} disabled={loadingMore}>
+          <Text style={styles.loadMoreText}>{loadingMore ? 'Carregando...' : 'Carregar mais rotas'}</Text>
+        </Pressable>
+      )}
     </ScrollView>
   )
 }
@@ -158,4 +166,6 @@ const styles = StyleSheet.create({
   empty: { padding: 24, alignItems: 'center', borderRadius: radius.large, backgroundColor: colors.surface },
   emptyTitle: { color: colors.text, fontWeight: '900' },
   emptyText: { marginTop: 5, color: colors.textMuted, textAlign: 'center' },
+  loadMore: { height: 46, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.line, borderRadius: radius.medium, backgroundColor: colors.surface },
+  loadMoreText: { color: colors.text, fontFamily: fonts.bold, fontSize: 14 },
 })

@@ -96,6 +96,7 @@ supabase/migration_operations_and_waitlist.sql
 supabase/migration_scalable_backend.sql
 supabase/migration_mobile_push_and_realtime.sql
 supabase/migration_vehicle_lookup_and_vans.sql
+supabase/migration_hyperscale_foundation.sql
 ```
 
 Se o schema principal já estiver instalado, execute somente as migrações que ainda não foram aplicadas.
@@ -108,7 +109,7 @@ npx supabase login
 npx supabase link --project-ref SEU_PROJECT_REF
 npx supabase functions deploy geocode
 npx supabase functions deploy vehicle-lookup
-npx supabase functions deploy send-push --no-verify-jwt
+npx supabase functions deploy process-push-queue --no-verify-jwt
 npx supabase secrets set GEOCODING_USER_AGENT="Papaleguas/2.0 (contato@seu-dominio.com)"
 npx supabase secrets set VEHICLE_LOOKUP_PROVIDER="fipeplaca" VEHICLE_LOOKUP_API_TOKEN="SUA_CHAVE"
 npx supabase secrets set VEHICLE_LOOKUP_DAILY_LIMIT="20"
@@ -121,10 +122,12 @@ o provedor Placa Fipe, configure `VEHICLE_LOOKUP_PROVIDER="placafipe"` e a chave
 correspondente. Resultados bem-sucedidos ficam em cache por 30 dias para reduzir
 custo e chamadas repetidas.
 
-Configure o Database Webhook de `public.notifications` com o mesmo segredo no
-header `x-papaleguas-secret`.
+Remova o Database Webhook antigo de `public.notifications`. Configure um
+scheduler ou worker para chamar `process-push-queue` com o mesmo segredo no
+header `x-papaleguas-secret`; a funcao busca lotes na `notification_outbox`.
 
-O plano de capacidade, configuracao de mapas e teste de carga estao em `docs/SCALING_ARCHITECTURE.md`.
+O plano de capacidade, configuracao de mapas e teste de carga estao em
+`docs/SCALING_ARCHITECTURE.md` e `docs/scaling-25m.md`.
 
 3. Copie as variáveis de ambiente:
 
@@ -158,6 +161,7 @@ npm run dev
 | `messages` | Mensagens do chat por reserva |
 | `route_waitlist` | Fila de espera das rotas lotadas |
 | `notifications` | Alertas de promoção, cancelamento e reposição |
+| `notification_outbox` | Fila duravel para entrega de push |
 
 ### Funções SQL
 - `reserve_seat(...)` — reserva atômica sem condições de corrida
@@ -165,6 +169,8 @@ npm run dev
 - `join_route_waitlist(...)` — adiciona passageiro à fila de uma rota lotada
 - `cancel_booking(...)` — cancela e promove automaticamente o primeiro da fila
 - `cancel_route(...)` — encerra a rota e notifica passageiros afetados
+- `search_routes_page(...)` — busca paginada por cursor
+- `claim_notification_outbox(...)` — reserva lotes de push para workers
 
 ---
 

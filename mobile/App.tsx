@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import {
@@ -40,6 +40,9 @@ export default function App() {
   const [role, setRole] = useState<AppRole>('passenger')
   const [routes, setRoutes] = useState<Route[]>(isSupabaseConfigured ? [] : demoRoutes)
   const [routesLoading, setRoutesLoading] = useState(false)
+  const [routesLoadingMore, setRoutesLoadingMore] = useState(false)
+  const routesCursor = useRef<{ departureTime: string; id: string } | null>(null)
+  const [hasMoreRoutes, setHasMoreRoutes] = useState(false)
   const [tab, setTab] = useState<Tab>('home')
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null)
   const [inboxOpen, setInboxOpen] = useState(false)
@@ -73,29 +76,41 @@ export default function App() {
       })
   }, [session?.user.id])
 
-  const loadRoutes = useCallback(async () => {
+  const loadRoutes = useCallback(async ({ append = false }: { append?: boolean } = {}) => {
     if (!supabase || !session?.user) {
       setRoutes(demoRoutes)
       return
     }
-    setRoutesLoading(true)
-    const query = role === 'driver'
-      ? supabase
+    append ? setRoutesLoadingMore(true) : setRoutesLoading(true)
+    const { data, error } = role === 'driver'
+      ? await supabase
           .from('routes')
           .select('*,driver:profiles!routes_driver_id_fkey(id,name,phone,avatar_url),seats(*),bookings(id,status,amount)')
           .eq('driver_id', session.user.id)
           .order('departure_time', { ascending: true })
           .limit(100)
-      : supabase
-          .from('routes')
-          .select('*,driver:profiles!routes_driver_id_fkey(id,name,phone,avatar_url),seats(*)')
-          .in('status', ['open', 'full'])
-          .gte('departure_time', new Date(Date.now() - 60 * 60 * 1000).toISOString())
-          .order('departure_time', { ascending: true })
-          .limit(100)
-    const { data, error } = await query
-    if (!error) setRoutes((data as unknown as Route[]) ?? [])
+      : await supabase.rpc('search_routes_page', {
+          p_origin_region: null,
+          p_destination_region: null,
+          p_departure_after: new Date().toISOString(),
+          p_cursor_departure: append ? routesCursor.current?.departureTime ?? null : null,
+          p_cursor_id: append ? routesCursor.current?.id ?? null : null,
+          p_page_size: 50,
+        })
+    if (!error) {
+      const page = (data as unknown as Route[]) ?? []
+      setRoutes((current) => append && role === 'passenger' ? [...current, ...page] : page)
+      if (role === 'passenger') {
+        const last = page.at(-1)
+        routesCursor.current = last ? { departureTime: last.departure_time, id: last.id } : null
+        setHasMoreRoutes(page.length === 50)
+      } else {
+        routesCursor.current = null
+        setHasMoreRoutes(false)
+      }
+    }
     setRoutesLoading(false)
+    setRoutesLoadingMore(false)
   }, [role, session?.user.id])
 
   useEffect(() => {
@@ -167,7 +182,16 @@ export default function App() {
           ? <MessagesView />
           : role === 'driver'
             ? <DriverDashboard profile={profile} routes={routes} loading={routesLoading} onRefresh={loadRoutes} />
-            : <PassengerHome profile={profile} routes={routes} loading={routesLoading} onRefresh={loadRoutes} onSelectRoute={setSelectedRoute} />
+            : <PassengerHome
+                profile={profile}
+                routes={routes}
+                loading={routesLoading}
+                loadingMore={routesLoadingMore}
+                hasMore={hasMoreRoutes}
+                onRefresh={() => void loadRoutes()}
+                onLoadMore={() => void loadRoutes({ append: true })}
+                onSelectRoute={setSelectedRoute}
+              />
 
   return (
     <SafeAreaView style={styles.safe}>
