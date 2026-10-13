@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { ArrowUpDown, LocateFixed, Map, Search } from 'lucide-react'
 import { getOpenRoutes, REGIONS, getCurrentPosition, distanceKm } from '../lib/supabase'
 import RouteCard from './RouteCard'
 import Modal from './Modal'
 import SeatPicker from './SeatPicker'
-import RouteMap from './RouteMap'
+const RouteMap = lazy(() => import('./RouteMap'))
 import RouteDetails from './RouteDetails'
 import WaitlistPanel from './WaitlistPanel'
 
@@ -24,6 +24,7 @@ export default function OpenRoutes({ user, onError, onSuccess }) {
   const [locating, setLocating] = useState(false)
   const [sortByDistance, setSortByDistance] = useState(false)
   const [showMap, setShowMap] = useState(false)
+  const [mapOpened, setMapOpened] = useState(false)
 
   async function load(nextFilters = filters, { append = false } = {}) {
     append ? setLoadingMore(true) : setLoading(true)
@@ -83,17 +84,21 @@ export default function OpenRoutes({ user, onError, onSuccess }) {
     }
   }
 
-  let visibleRoutes = routes.filter(r => r.driver_id !== user.id)
+  const visibleRoutes = useMemo(() => {
+    let next = routes.filter(r => r.driver_id !== user.id)
 
-  if (sortByDistance && myLocation) {
-    visibleRoutes = visibleRoutes
-      .map(r => ({ ...r, _distance: distanceKm(myLocation.lat, myLocation.lng, r.origin_lat, r.origin_lng) }))
-      .sort((a, b) => {
-        if (a._distance === null) return 1
-        if (b._distance === null) return -1
-        return a._distance - b._distance
-      })
-  }
+    if (sortByDistance && myLocation) {
+      next = next
+        .map(r => ({ ...r, _distance: distanceKm(myLocation.lat, myLocation.lng, r.origin_lat, r.origin_lng) }))
+        .sort((a, b) => {
+          if (a._distance === null) return 1
+          if (b._distance === null) return -1
+          return a._distance - b._distance
+        })
+    }
+
+    return next
+  }, [routes, user.id, sortByDistance, myLocation])
 
   return (
     <main className="page-container passenger-home">
@@ -159,13 +164,20 @@ export default function OpenRoutes({ user, onError, onSuccess }) {
         </form>
 
         <div className={`passenger-search__map ${showMap ? 'is-visible' : ''}`}>
-          <RouteMap routes={visibleRoutes} myLocation={myLocation} showHeader={false} />
+          {(showMap || mapOpened) && (
+            <Suspense fallback={<div className="skeleton" style={{ minHeight: '16rem' }} />}>
+              <RouteMap routes={visibleRoutes} myLocation={myLocation} showHeader={false} />
+            </Suspense>
+          )}
         </div>
 
         <button
           className="map-toggle"
           type="button"
-          onClick={() => setShowMap(current => !current)}
+          onClick={() => setShowMap(current => {
+            if (!current) setMapOpened(true)
+            return !current
+          })}
           aria-expanded={showMap}
         >
           <Map size={18} aria-hidden="true" />

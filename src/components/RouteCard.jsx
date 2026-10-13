@@ -1,8 +1,9 @@
+import { memo } from 'react'
 import { Armchair, ArrowRight, CarFront, Clock3, MapPin } from 'lucide-react'
 import { getPrice, getRegionName } from '../lib/supabase'
 import { formatDateTime, formatDeparture, formatPrice, initials } from '../lib/format'
 
-export default function RouteCard({ route, onReserve, onWaitlist, isOwn = false, footerExtra, distanceKm, compact = false }) {
+function RouteCard({ route, onReserve, onWaitlist, isOwn = false, footerExtra, distanceKm, compact = false }) {
   const availableSeats = route.seats?.filter(s => s.status === 'available').length ?? route.available_seats
   const totalSeats = route.total_seats ?? route.seats?.length ?? 0
   const price = getPrice(route.origin_region, route.destination_region)
@@ -97,3 +98,5 @@ export default function RouteCard({ route, onReserve, onWaitlist, isOwn = false,
     </div>
   )
 }
+
+export default memo(RouteCard)
